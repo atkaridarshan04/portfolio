@@ -209,7 +209,7 @@ export function Hero() {
             The interface I think in.
           </h3>
           <p className="mt-3 text-sm text-muted-foreground">
-            Most of my craft happens in plain text - declarations, manifests, pipelines.
+            Most of my craft happens in plain text, declarations, manifests, pipelines.
             Each command is a contract with production.
           </p>
         </div>
