@@ -58,7 +58,7 @@ export function Certifications() {
 }
 export function GitHubSection() {
   const USER = "atkaridarshan04";
-  // Pinned repos from darshan-engineering (kept for future re-enable)
+  // Pinned repos from atkaridarshan04 (kept for future re-enable)
   // const pinnedRepos: GHRepo[] = [ ... ];
   return (<section id="github" className="section-pad relative overflow-hidden">
     <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
@@ -87,13 +87,10 @@ export function GitHubSection() {
             </motion.div>
           </div>
 
-          {/* profile + org links */}
+          {/* profile */}
           <div className="flex flex-wrap gap-3">
             <a href={`https://github.com/${USER}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full bg-foreground/95 px-5 py-2.5 text-sm font-semibold text-background transition hover:bg-foreground">
               <GitBranch className="h-4 w-4" /> @{USER}
-            </a>
-            <a href="https://github.com/darshan-engineering" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full hairline bg-surface px-5 py-2.5 text-sm font-medium transition hover:bg-surface-elevated">
-              <GitBranch className="h-4 w-4" /> darshan-engineering
             </a>
           </div>
         </div>

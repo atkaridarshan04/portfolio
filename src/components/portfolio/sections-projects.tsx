@@ -30,7 +30,7 @@ const PROJECTS = [
       "Full observability stack: metrics, logs, and traces in a single Grafana dashboard",
     ],
     image: projK8s,
-    github: "https://github.com/darshan-engineering/cloudnative-devops-blueprint",
+    github: "https://github.com/atkaridarshan04/cloudnative-devops-blueprint",
   },
   {
     num: "02", title: "AWS Cloud Portfolio", kicker: "Cloud Engineering",
@@ -42,7 +42,7 @@ const PROJECTS = [
       "Demonstrates reusable cloud architecture patterns across security, scalability, observability and Infrastructure as Code."
     ],
     image: projAws,
-    github: "https://github.com/darshan-engineering/aws-cloud-portfolio",
+    github: "https://github.com/atkaridarshan04/aws-cloud-portfolio",
   },
   {
     num: "03", title: "DevSecOps GitHub Actions", kicker: "Secure Software Delivery",
@@ -53,7 +53,7 @@ const PROJECTS = [
       "Automated Docker image publishing to GitHub Container Registry and GitOps-ready Kubernetes manifest updates for continuous deployment workflows"
     ],
     image: projDevsec,
-    github: "https://github.com/darshan-engineering/devsecops-github-actions",
+    github: "https://github.com/atkaridarshan04/devsecops-github-actions",
   },
   {
     num: "04", title: "MLOps Platform Blueprint", kicker: "Machine Learning Operations",
@@ -65,7 +65,7 @@ const PROJECTS = [
       "Autoscaling inference with KServe",
     ],
     image: projMlops,
-    github: "https://github.com/darshan-engineering/mlops-platform-blueprint",
+    github: "https://github.com/atkaridarshan04/mlops-platform-blueprint",
   },
 ];
 function ProjectCard({ p, i }) {
