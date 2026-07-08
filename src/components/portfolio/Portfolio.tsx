@@ -43,9 +43,9 @@ export default function Portfolio() {
       <SectionConnector />
       <Domains />
       <SectionConnector />
-      <Philosophy />
-      <SectionConnector />
       <Projects />
+      <SectionConnector />
+      <Philosophy />
       <Stack />
       <SectionConnector />
       <Certifications />

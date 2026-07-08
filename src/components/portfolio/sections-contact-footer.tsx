@@ -12,30 +12,41 @@ export function Contact() {
         <div className="flex flex-col gap-10 md:flex-row md:items-center md:justify-between">
           {/* left: heading + description */}
           <div className="max-w-xl">
-            <SectionLabel index="07" title="Contact"/>
-            <h2 className="mt-6 font-display text-balance text-5xl font-semibold leading-[1.02] tracking-tight sm:text-6xl">
+            <SectionLabel slug="escalation" title="Contact"/>
+            <h2 className="mt-6 font-display text-balance text-5xl font-bold leading-[0.98] tracking-tight sm:text-6xl">
               Let&apos;s build something
               <br />
-              <span className="bg-gradient-to-r from-primary via-primary/80 to-foreground bg-clip-text text-transparent">
-                production-grade.
-              </span>
+              <span className="text-primary">production-grade.</span>
             </h2>
             <p className="mt-5 max-w-md text-base text-muted-foreground">
               Interested in cloud, DevOps, SRE, or MLOps collaboration? The fastest way to reach me is email.
             </p>
           </div>
 
-          {/* right: links stacked vertically */}
-          <div className="flex flex-col items-start gap-3 md:items-end md:shrink-0">
-            <a href="mailto:atkaridarshan04@gmail.com" className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[0_8px_30px_-8px_oklch(0.62_0.20_250/_50%)] transition hover:brightness-110">
-              <Mail className="h-4 w-4"/> atkaridarshan04@gmail.com
-            </a>
-            <div className="flex items-center gap-2">
-              <a href="https://linkedin.com/in/darshan-atkari" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-full hairline bg-surface px-4 py-2.5 text-sm transition hover:bg-surface-elevated">
-                <Linkedin className="h-3.5 w-3.5"/> LinkedIn
+          {/* right: escalation tiers */}
+          <div className="w-full max-w-xs shrink-0 overflow-hidden rounded-md hairline bg-surface/60">
+            <div className="flex items-center gap-1.5 border-b border-hairline px-3 py-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-status-good status-pulse" />
+              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">on-call · new opportunities</span>
+            </div>
+            <div className="flex flex-col divide-y divide-hairline">
+              <a href="mailto:atkaridarshan04@gmail.com" className="group flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-primary/10">
+                <span className="flex items-center gap-2.5 text-sm font-medium text-foreground">
+                  <Mail className="h-4 w-4 text-primary"/> Email
+                </span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-primary">primary</span>
               </a>
-              <a href="https://github.com/atkaridarshan04" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-full hairline bg-surface px-4 py-2.5 text-sm transition hover:bg-surface-elevated">
-                <Github className="h-3.5 w-3.5"/> GitHub
+              <a href="https://linkedin.com/in/darshan-atkari" target="_blank" rel="noreferrer" className="group flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-surface-elevated">
+                <span className="flex items-center gap-2.5 text-sm text-foreground/85">
+                  <Linkedin className="h-4 w-4 text-muted-foreground"/> LinkedIn
+                </span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">secondary</span>
+              </a>
+              <a href="https://github.com/atkaridarshan04" target="_blank" rel="noreferrer" className="group flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-surface-elevated">
+                <span className="flex items-center gap-2.5 text-sm text-foreground/85">
+                  <Github className="h-4 w-4 text-muted-foreground"/> GitHub
+                </span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">tertiary</span>
               </a>
             </div>
           </div>
@@ -54,16 +65,16 @@ export function Footer() {
     return (<footer className="border-t border-hairline">
       <div className="mx-auto max-w-6xl px-6 py-12">
         {/* social proof stat strip */}
-        <div className="mb-10 grid grid-cols-2 gap-px overflow-hidden rounded-2xl hairline bg-hairline sm:grid-cols-4">
+        <div className="mb-10 grid grid-cols-2 gap-px overflow-hidden rounded-md hairline bg-hairline sm:grid-cols-4">
           {stats.map((s) => (<div key={s.label} className="flex flex-col items-center bg-surface/50 px-4 py-5">
-              <span className="font-display text-2xl font-semibold tracking-tight text-foreground">{s.value}</span>
+              <span className="font-display text-2xl font-bold tracking-tight text-foreground">{s.value}</span>
               <span className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground text-center">{s.label}</span>
             </div>))}
         </div>
 
         <div className="flex flex-col items-start justify-between gap-3 text-[11px] sm:flex-row sm:items-center">
           <div className="flex items-center gap-2.5">
-            <span className="grid h-6 w-6 place-items-center rounded-full bg-primary/15 text-primary font-display text-xs font-bold">DA</span>
+            <span className="grid h-6 w-6 place-items-center rounded-[3px] bg-primary text-primary-foreground font-display text-xs font-bold">DA</span>
             <span className="font-mono uppercase tracking-[0.22em] text-muted-foreground">
               Darshan Atkari · © {new Date().getFullYear()}
             </span>

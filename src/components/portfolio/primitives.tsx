@@ -13,12 +13,18 @@ export const stagger = {
   hidden: {},
   show: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
 };
-/* ── SectionLabel ────────────────────────────────────────────── */
-export function SectionLabel({ index, title }) {
-  return (<div className="flex items-baseline gap-4">
-    <span className="font-mono text-xs text-primary">{index}</span>
-    <div className="h-px w-10 bg-primary/40" />
-    <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">{title}</span>
+/* ── SectionLabel — a status-page "component" row ────────────── */
+export function SectionLabel({ slug, title }) {
+  return (<div className="flex items-center gap-3">
+    <span className="inline-flex items-center gap-1.5 rounded-sm bg-status-good/10 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-status-good ring-1 ring-status-good/25">
+      <StatusDot />
+      operational
+    </span>
+    <div className="h-px w-6 bg-hairline" />
+    <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+      component / {slug}
+    </span>
+    {title ? <span className="sr-only">{title}</span> : null}
   </div>);
 }
 /* ── SectionMini ─────────────────────────────────────────────── */
@@ -30,9 +36,9 @@ export function SectionMini({ label }) {
 }
 /* ── StatusDot ───────────────────────────────────────────────── */
 export function StatusDot({ healthy = true }) {
-  return (<span className="relative inline-flex h-2 w-2">
-    <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 ${healthy ? "bg-primary" : "bg-destructive"}`} />
-    <span className={`relative inline-flex h-2 w-2 rounded-full ${healthy ? "bg-primary status-pulse" : "bg-destructive"}`} />
+  return (<span className="relative inline-flex h-1.5 w-1.5">
+    <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 ${healthy ? "bg-status-good" : "bg-destructive"}`} />
+    <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${healthy ? "bg-status-good status-pulse" : "bg-destructive"}`} />
   </span>);
 }
 /* ── Ambient topology background (fixed, full viewport) ─────── */
@@ -90,8 +96,10 @@ export function FlowField({ className = "" }) {
 /* ── Section connector ───────────────────────────────────────── */
 export function SectionConnector() {
   return (<div aria-hidden className="relative flex items-center justify-center py-6 pointer-events-none">
-    <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
-    <div className="absolute h-1.5 w-1.5 rotate-45 bg-primary/40 ring-1 ring-primary/25" />
+    <div className="h-px w-full bg-hairline" />
+    <div className="absolute h-1.5 w-2.5 bg-background px-px">
+      <div className="h-full w-full bg-primary/50" />
+    </div>
   </div>);
 }
 /* ── PillarHoverFx ───────────────────────────────────────────── */
@@ -167,78 +175,56 @@ export function HeroBlueprint() {
     </g>
   </svg>);
 }
-/* ── BootSequence ────────────────────────────────────────────── */
+/* ── BootSequence — amber-phosphor journalctl boot log ───────── */
+const BOOT_LINES = [
+  { t: "0.000000", msg: "darshan-atkari kernel: booting portfolio.img" },
+  { t: "0.041823", msg: "systemd[1]: starting cloud-init@career.service" },
+  { t: "0.183921", msg: "NetworkManager[512]: link up: eth-experience" },
+  { t: "0.402117", msg: "kubelet[1022]: node darshan-atkari joined cluster" },
+  { t: "0.618554", msg: "argocd-server: synced desired state → production" },
+  { t: "0.891230", msg: "observability: metrics + logs + traces attached" },
+  { t: "1.144902", msg: "compliance-agent: 3 certifications verified" },
+  { t: "1.402318", msg: "darshan-atkari.service: reached target production-ready", ok: true },
+];
 export function BootSequence({ onDone }) {
-  const steps = [
-    "Initializing infrastructure",
-    "Loading configuration",
-    "Starting control plane",
-    "Scheduling workloads",
-    "Provisioning runtime",
-    "Deploying services",
-    "Collecting telemetry",
-    "Cluster ready",
-  ];
   const [i, setI] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => {
-      setI((p) => {
-        if (p >= steps.length - 1) {
-          clearInterval(id);
-          return p;
-        }
-        return p + 1;
-      });
-    }, 260);
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (i >= BOOT_LINES.length - 1) return;
+    const delay = 140 + ((i * 53) % 130);
+    const t = setTimeout(() => setI((p) => p + 1), delay);
+    return () => clearTimeout(t);
+  }, [i]);
   useEffect(() => {
-    if (i === steps.length - 1) {
-      const t = setTimeout(onDone, 700);
+    if (i === BOOT_LINES.length - 1) {
+      const t = setTimeout(onDone, 420);
       return () => clearTimeout(t);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [i]);
-  const progress = ((i + 1) / steps.length) * 100;
-  return (<motion.div initial={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.5 } }} className="fixed inset-0 z-[100] grid place-items-center bg-background">
-    <div aria-hidden className="pointer-events-none absolute inset-0">
-      <div className="absolute left-1/2 top-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-[140px]" />
-      {/* mini topology during boot */}
-      <svg viewBox="0 0 600 400" className="absolute inset-0 h-full w-full text-primary opacity-[0.12]" preserveAspectRatio="xMidYMid slice">
-        {[[100, 200], [250, 120], [250, 280], [400, 200], [550, 150], [550, 250]].map(([x, y], idx) => (<g key={idx}>
-          <circle cx={x} cy={y} r="3" fill="currentColor" opacity={0.4 + idx * 0.08} />
-          <animate attributeName="opacity" values="0.4;0.9;0.4" dur={`${2 + idx * 0.3}s`} repeatCount="indefinite" />
-        </g>))}
-        {[[0, 1], [0, 2], [1, 3], [2, 3], [3, 4], [3, 5]].map(([a, b], idx) => {
-          const pts = [[100, 200], [250, 120], [250, 280], [400, 200], [550, 150], [550, 250]];
-          return <line key={idx} x1={pts[a][0]} y1={pts[a][1]} x2={pts[b][0]} y2={pts[b][1]} stroke="currentColor" strokeOpacity="0.2" strokeWidth="0.8" />;
-        })}
-      </svg>
-    </div>
-    <div className="relative w-full max-w-sm px-6">
-      <div className="flex items-center gap-3">
-        <span className="grid h-9 w-9 place-items-center rounded-full bg-primary/15 text-primary font-display text-sm font-bold">DA</span>
-        <div className="font-mono text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-          cluster · bootstrap
+  }, [i, onDone]);
+  return (<motion.div initial={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.12, ease: "easeIn" } }} className="fixed inset-0 z-[100] overflow-hidden bg-background">
+    {/* scanlines + vignette, CRT feel */}
+    <div aria-hidden className="pointer-events-none absolute inset-0 opacity-[0.5]" style={{
+      backgroundImage: "repeating-linear-gradient(to bottom, rgba(255,184,77,0.05) 0px, rgba(255,184,77,0.05) 1px, transparent 1px, transparent 3px)",
+    }} />
+    <div aria-hidden className="pointer-events-none absolute inset-0" style={{
+      background: "radial-gradient(ellipse 70% 60% at 50% 45%, transparent 55%, rgba(0,0,0,0.55) 100%)",
+    }} />
+    <div className="relative flex h-full w-full items-center justify-center px-6">
+      <div className="w-full max-w-lg">
+        <div className="mb-4 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.24em] text-primary/50">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary/70" />
+          console · ttyAMA0
+        </div>
+        <ul className="space-y-1.5">
+          {BOOT_LINES.slice(0, i + 1).map((l) => (<li key={l.t} className="font-mono text-[12px] leading-relaxed sm:text-[13px]">
+            <span className="text-primary/40">[{l.t}]</span>{" "}
+            <span className={l.ok ? "text-status-good" : "phosphor"}>{l.msg}</span>
+          </li>))}
+        </ul>
+        <div className="mt-2 flex items-center gap-1 font-mono text-[13px]">
+          <span className="text-primary/40">❯</span>
+          <span className="inline-block h-4 w-2 animate-pulse bg-primary/70" />
         </div>
       </div>
-      <div className="mt-8 h-px w-full overflow-hidden rounded-full bg-hairline">
-        <motion.div className="h-full bg-primary shadow-[0_0_16px_oklch(0.7_0.18_240/_70%)]" animate={{ width: `${progress}%` }} transition={{ duration: 0.35, ease: "easeOut" }} />
-      </div>
-      <ul className="mt-6 space-y-1.5 font-mono text-[12px] leading-relaxed">
-        {steps.slice(0, i + 1).map((s, idx) => {
-          const done = idx < i || i === steps.length - 1;
-          return (<motion.li key={s} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-2.5">
-            <span className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full transition-colors duration-300 ${done ? "bg-primary shadow-[0_0_6px_oklch(0.7_0.18_240/_80%)]" : "bg-primary/35"}`} />
-            <span className={done ? "text-foreground/85" : "text-muted-foreground"}>
-              {s}
-              {!done && idx === i && <span className="ml-1 animate-pulse text-primary">…</span>}
-              {done && idx === steps.length - 1 && <span className="ml-2 text-primary">✓</span>}
-            </span>
-          </motion.li>);
-        })}
-      </ul>
     </div>
   </motion.div>);
 }

@@ -34,32 +34,40 @@ function RoleCycler() {
     <span className="ml-0.5 inline-block h-4 w-px bg-primary align-middle animate-pulse" />
   </span>);
 }
-/* ── Compact stats strip (replaces OpsPanel) ─────────────────── */
+/* ── Metrics panel (replaces stats strip) ────────────────────── */
 function StatsStrip() {
   const stats = [
-    { label: "Projects", value: "5+" },
-    { label: "Certs", value: "3" },
-    { label: "Tools", value: "30+" },
-    { label: "Commits", value: "∞" },
+    { label: "Projects shipped", value: "5+" },
+    { label: "Certifications", value: "3" },
+    { label: "Tools in stack", value: "30+" },
+    { label: "Incidents open", value: "0" },
   ];
-  return (<motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.7, ease: [0.22, 1, 0.36, 1] }} className="grid grid-cols-4 divide-x divide-hairline overflow-hidden rounded-2xl hairline glass">
-    {stats.map((s) => (<div key={s.label} className="flex flex-col items-center py-3 px-2">
-      <span className="font-display text-lg font-semibold tracking-tight text-foreground">{s.value}</span>
-      <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">{s.label}</span>
-    </div>))}
+  return (<motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.7, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden rounded-md hairline bg-surface/60">
+    <div className="flex items-center gap-1.5 border-b border-hairline px-3 py-2">
+      <span className="h-1.5 w-1.5 rounded-full bg-destructive/50" />
+      <span className="h-1.5 w-1.5 rounded-full bg-primary/50" />
+      <span className="h-1.5 w-1.5 rounded-full bg-status-good/50" />
+      <span className="ml-2 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">panel · summary</span>
+    </div>
+    <div className="grid grid-cols-2 [&>div:nth-child(odd)]:border-r [&>div:nth-child(3)]:border-t [&>div:nth-child(4)]:border-t border-hairline">
+      {stats.map((s) => (<div key={s.label} className="flex flex-col gap-0.5 px-3 py-2.5">
+        <span className="font-display text-lg font-semibold text-foreground">{s.value}</span>
+        <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">{s.label}</span>
+      </div>))}
+    </div>
   </motion.div>);
 }
 /* ── Floating labels around portrait ─────────────────────────── */
 // Removed - kept code-paths clean
-/* ── Nav ─────────────────────────────────────────────────────── */
+/* ── Nav — a status-bar header, not a floating pill ──────────── */
 export function Nav({ theme, onToggleTheme }) {
   const links = [
     { label: "Domains", href: "#domains" },
-    { label: "Projects", href: "#projects" },
-    { label: "Stack", href: "#stack" },
-    { label: "Certs", href: "#certs" },
-    { label: "GitHub", href: "#github" },
-    { label: "Contact", href: "#contact" },
+    { label: "Postmortems", href: "#projects" },
+    { label: "Metrics", href: "#stack" },
+    { label: "Compliance", href: "#certs" },
+    { label: "Activity", href: "#github" },
+    { label: "Escalate", href: "#contact" },
   ];
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState("top");
@@ -82,26 +90,29 @@ export function Nav({ theme, onToggleTheme }) {
     return () => io.disconnect();
   }, []);
   return (<motion.header initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, ease: "easeOut" }} className="fixed inset-x-0 top-0 z-50">
-    <div className={`mx-auto mt-4 flex max-w-6xl items-center justify-between gap-4 rounded-full hairline px-4 py-2 transition-all duration-300 sm:px-5 ${scrolled ? "glass bg-background/70 shadow-[0_8px_40px_-20px_oklch(0_0_0/_60%)] [backdrop-filter:blur(22px)_saturate(160%)]" : "glass"}`}>
-      <a href="#top" className="flex items-center gap-2.5 pl-1.5">
-        <span className="grid h-7 w-7 place-items-center rounded-full bg-primary/15 text-primary font-display text-sm font-bold">DA</span>
-        <span className="font-display text-sm font-semibold tracking-tight hidden sm:inline">Darshan Atkari</span>
+    <div className={`flex items-center justify-between gap-4 border-b px-5 py-3 transition-colors duration-300 sm:px-8 ${scrolled ? "border-hairline bg-background/92 backdrop-blur-md" : "border-transparent bg-transparent"}`}>
+      <a href="#top" className="flex items-center gap-2.5">
+        <span className="grid h-6 w-6 place-items-center rounded-[3px] bg-primary text-primary-foreground font-display text-[11px] font-bold">DA</span>
+        <span className="hidden font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground sm:inline">darshan-atkari</span>
+        <span className="hidden items-center gap-1 rounded-sm bg-status-good/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.15em] text-status-good ring-1 ring-status-good/25 md:inline-flex">
+          <StatusDot /> operational
+        </span>
       </a>
-      <nav className="hidden items-center gap-1 md:flex">
+      <nav className="hidden items-center gap-5 md:flex">
         {links.map((l) => {
           const id = l.href.slice(1);
           const isActive = active === id;
-          return (<a key={l.href} href={l.href} className={`relative rounded-full px-3 py-1.5 text-[13px] transition ${isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-            {isActive && (<motion.span layoutId="nav-active" className="absolute inset-0 -z-10 rounded-full bg-primary/15 ring-1 ring-inset ring-primary/25" transition={{ type: "spring", stiffness: 320, damping: 30 }} />)}
+          return (<a key={l.href} href={l.href} className={`relative py-1 font-mono text-[11px] uppercase tracking-[0.16em] transition ${isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
             {l.label}
+            {isActive && (<motion.span layoutId="nav-active" className="absolute inset-x-0 -bottom-0.5 h-px bg-primary" transition={{ type: "spring", stiffness: 320, damping: 30 }} />)}
           </a>);
         })}
       </nav>
       <div className="flex items-center gap-2">
-        <button onClick={onToggleTheme} aria-label="Toggle theme" className="grid h-8 w-8 place-items-center rounded-full hairline bg-surface/60 text-muted-foreground transition hover:bg-surface-elevated hover:text-foreground">
+        <button onClick={onToggleTheme} aria-label="Toggle theme" className="grid h-7 w-7 place-items-center rounded-[3px] hairline bg-surface/60 text-muted-foreground transition hover:bg-surface-elevated hover:text-foreground">
           {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
         </button>
-        <a href="#contact" className="group inline-flex items-center gap-1.5 rounded-full bg-foreground/95 px-3.5 py-1.5 text-[13px] font-medium text-background transition hover:bg-foreground">
+        <a href="#contact" className="group inline-flex items-center gap-1.5 rounded-[3px] bg-primary px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.14em] font-medium text-primary-foreground transition hover:brightness-110">
           Get in touch
           <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
         </a>
@@ -131,22 +142,23 @@ export function Hero() {
         {/* LEFT */}
         <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-col items-start gap-6">
 
-          {/* name */}
-          <motion.h1 variants={fade} className="font-display text-balance text-[clamp(2.6rem,6.5vw,5rem)] font-semibold leading-[1.0] tracking-tight">
-            Darshan Atkari
-          </motion.h1>
-
-          {/* animated role */}
-          <motion.div variants={fade} className="flex items-center gap-3">
-            <StatusDot />
+          {/* status line */}
+          <motion.div variants={fade} className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground sm:text-xs sm:tracking-[0.16em]">
+            <span className="inline-flex items-center gap-2 whitespace-nowrap">
+              <StatusDot />
+              currently deployed as
+            </span>
             <RoleCycler />
           </motion.div>
 
-          {/* description */}
-          <motion.p variants={fade} className="max-w-xl font-display text-xl italic leading-snug text-foreground/75 sm:text-2xl">
-            Automating the present.{" "}
-            <span className="text-primary not-italic font-normal">·</span>{" "}
-            Scaling the future.
+          {/* name */}
+          <motion.h1 variants={fade} className="font-display text-balance text-[clamp(2.8rem,7vw,5.5rem)] font-bold leading-[0.95] tracking-tight">
+            Darshan Atkari
+          </motion.h1>
+
+          {/* kicker */}
+          <motion.p variants={fade} className="max-w-xl font-mono text-sm leading-snug text-primary sm:text-base">
+            automating the present <span className="text-muted-foreground">·</span> scaling the future
           </motion.p>
 
           <motion.p variants={fade} className="max-w-xl text-balance text-base leading-relaxed text-muted-foreground sm:text-lg">
@@ -157,18 +169,18 @@ export function Hero() {
 
           {/* CTAs */}
           <motion.div variants={fade} className="flex flex-wrap items-center gap-3 pt-1">
-            <a href="#projects" className="group inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[0_10px_40px_-10px_oklch(0.72_0.19_155/_55%)] transition hover:brightness-110">
-              View Projects
+            <a href="#projects" className="group inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[0_10px_40px_-10px_rgba(245,166,35,0.5)] transition hover:brightness-110">
+              View Postmortems
               <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
             </a>
-            <a href="https://github.com/atkaridarshan04" target="_blank" rel="noreferrer" className="group inline-flex items-center gap-2 rounded-full hairline bg-surface px-5 py-3 text-sm font-medium text-foreground transition hover:bg-surface-elevated">
+            <a href="https://github.com/atkaridarshan04" target="_blank" rel="noreferrer" className="group inline-flex items-center gap-2 rounded-md hairline bg-surface px-5 py-3 text-sm font-medium text-foreground transition hover:bg-surface-elevated">
               <Github className="h-4 w-4" /> GitHub
             </a>
-            <a href="https://www.linkedin.com/in/darshan-atkari/" target="_blank" rel="noreferrer" className="group inline-flex items-center gap-2 rounded-full hairline bg-surface px-5 py-3 text-sm font-medium text-foreground transition hover:bg-surface-elevated">
+            <a href="https://www.linkedin.com/in/darshan-atkari/" target="_blank" rel="noreferrer" className="group inline-flex items-center gap-2 rounded-md hairline bg-surface px-5 py-3 text-sm font-medium text-foreground transition hover:bg-surface-elevated">
               <Linkedin className="h-4 w-4" /> LinkedIn
             </a>
-            <a href="https://drive.google.com/file/d/1j7TD_B6cMMWz6VkXwYCfYubT49IjnLzy/view" target="_blank" className="group inline-flex items-center gap-2 rounded-full bg-transparent px-5 py-3 text-sm font-medium text-muted-foreground transition hover:text-foreground">
-              <FileText className="h-4 w-4" /> Resumme
+            <a href="https://drive.google.com/file/d/1j7TD_B6cMMWz6VkXwYCfYubT49IjnLzy/view" target="_blank" className="group inline-flex items-center gap-2 rounded-md bg-transparent px-5 py-3 text-sm font-medium text-muted-foreground transition hover:text-foreground">
+              <FileText className="h-4 w-4" /> Resume
               <ArrowUpRight className="h-3.5 w-3.5 opacity-60 transition group-hover:opacity-100" />
             </a>
           </motion.div>
@@ -176,19 +188,22 @@ export function Hero() {
 
         {/* RIGHT */}
         <motion.div initial={{ opacity: 0, y: 24, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.15 }} className="relative mx-auto w-full max-w-xs lg:mx-0 lg:mt-2 flex flex-col gap-4">
-          <div aria-hidden className="absolute -inset-8 -z-10 rounded-[2.5rem] bg-primary/18 blur-3xl" />
-          <div aria-hidden className="absolute -inset-1 -z-10 rounded-[2rem] bg-gradient-to-br from-primary/30 via-accent/12 to-transparent blur-md" />
+          <div aria-hidden className="absolute -inset-6 -z-10 rounded-lg bg-primary/12 blur-3xl" />
 
-          {/* portrait */}
-          <div className="relative rounded-[2rem] hairline glass p-2 shadow-[0_30px_80px_-30px_oklch(0_0_0/_65%)]">
-            <div className="relative aspect-square overflow-hidden rounded-[1.6rem] bg-surface">
+          {/* portrait, framed as a monitored panel */}
+          <div className="relative overflow-hidden rounded-lg hairline bg-surface shadow-[0_30px_80px_-30px_rgba(0,0,0,0.65)]">
+            <div className="flex items-center justify-between border-b border-hairline px-3 py-2">
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">profile.jpg</span>
+              <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-status-good">
+                <StatusDot /> verified
+              </span>
+            </div>
+            <div className="relative aspect-square overflow-hidden bg-surface">
               <img src={profileImg} alt="Portrait of Darshan Atkari" width={640} height={800} className="h-full w-full object-cover" />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/55 via-transparent to-transparent" />
-              <div className="pointer-events-none absolute inset-0 rounded-[1.6rem] ring-1 ring-inset ring-white/5" />
             </div>
-            <div className="absolute -bottom-3 left-6 flex items-center gap-2 rounded-full hairline glass px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-              kubectl get engineer
+            <div className="border-t border-hairline px-3 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+              status · accepting new engagements
             </div>
           </div>
 
@@ -249,7 +264,7 @@ function CommandTerminal() {
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx]);
-  return (<div className="relative overflow-hidden rounded-2xl hairline bg-[oklch(0.11_0.025_155)] shadow-[0_30px_80px_-30px_oklch(0_0_0/_70%)]">
+  return (<div className="relative overflow-hidden rounded-lg hairline bg-[#07090b] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)]">
     <div className="flex items-center gap-2 border-b border-white/8 px-4 py-2.5">
       <span className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
       <span className="h-2.5 w-2.5 rounded-full bg-primary/70" />

@@ -76,14 +76,13 @@ function ProjectCard({ p, i }) {
     {lightbox && <Lightbox src={lightbox} alt={`${p.title} architecture`} onClose={() => setLightbox(null)} />}
     <motion.article initial={{ opacity: 0, y: 36 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }} className="grid grid-cols-1 items-center gap-10 md:grid-cols-12 md:gap-14">
       <div className={`md:col-span-7 ${flip ? "md:order-2" : ""}`}>
-        <div className="group relative overflow-hidden rounded-3xl hairline bg-surface cursor-zoom-in" onClick={() => setLightbox(imgSrc)}>
-          <div className="absolute -inset-px -z-10 rounded-3xl bg-gradient-to-br from-primary/25 via-transparent to-transparent opacity-60" />
+        <div className="group relative overflow-hidden rounded-lg hairline bg-surface cursor-zoom-in" onClick={() => setLightbox(imgSrc)}>
           <div className="relative overflow-hidden">
             <img src={imgSrc} alt={`${p.title} architecture`} loading="lazy" className="w-full h-auto block transition-transform duration-500 group-hover:scale-[1.02]" />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
             {/* zoom hint overlay */}
             <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors duration-300 group-hover:bg-black/20">
-              <div className="flex items-center gap-2 rounded-full bg-background/80 px-4 py-2 text-xs font-medium opacity-0 backdrop-blur-sm transition-opacity duration-300 group-hover:opacity-100">
+              <div className="flex items-center gap-2 rounded-md bg-background/80 px-4 py-2 text-xs font-medium opacity-0 backdrop-blur-sm transition-opacity duration-300 group-hover:opacity-100">
                 <ZoomIn className="h-3.5 w-3.5" /> Click to enlarge
               </div>
             </div>
@@ -91,22 +90,30 @@ function ProjectCard({ p, i }) {
         </div>
       </div>
       <div className={`md:col-span-5 ${flip ? "md:order-1" : ""}`}>
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-xs text-primary">{p.num}</span>
-          <div className="h-px w-8 bg-primary/40" />
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-sm bg-status-good/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.16em] text-status-good ring-1 ring-status-good/25">
+            <span className="h-1 w-1 rounded-full bg-status-good" /> resolved
+          </span>
+          <span className="rounded-sm bg-surface px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground hairline">{p.kicker}</span>
         </div>
-        <h3 className="mt-3 font-display text-balance text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">{p.title}</h3>
+        <h3 className="mt-3 font-display text-balance text-2xl font-bold leading-tight tracking-tight sm:text-3xl">{p.title}</h3>
         <p className="mt-3 text-balance text-sm text-muted-foreground sm:text-base">{p.summary}</p>
-        <ul className="mt-5 space-y-1.5">
-          {p.outcomes.map((o) => (<li key={o} className="flex items-start gap-2 text-sm text-foreground/80">
-            <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-primary" />{o}
-          </li>))}
-        </ul>
-        <div className="mt-5 flex flex-wrap gap-1.5">
-          {p.tech.map((t) => (<span key={t} className="rounded-full hairline bg-surface px-2.5 py-0.5 font-mono text-[11px] text-muted-foreground">{t}</span>))}
+        <div className="mt-5">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70">resolution</div>
+          <ul className="mt-2 space-y-1.5">
+            {p.outcomes.map((o) => (<li key={o} className="flex items-start gap-2 text-sm text-foreground/80">
+              <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-primary" />{o}
+            </li>))}
+          </ul>
+        </div>
+        <div className="mt-5">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70">services involved</div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {p.tech.map((t) => (<span key={t} className="rounded-sm hairline bg-surface px-2.5 py-0.5 font-mono text-[11px] text-muted-foreground">{t}</span>))}
+          </div>
         </div>
         <div className="mt-6">
-          <a href={p.github} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full bg-foreground/95 px-4 py-2 text-xs font-semibold text-background transition hover:bg-foreground">
+          <a href={p.github} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-md bg-foreground/95 px-4 py-2 text-xs font-semibold text-background transition hover:bg-foreground">
             <Github className="h-3.5 w-3.5" /> View on GitHub <ArrowUpRight className="h-3 w-3 opacity-60" />
           </a>
         </div>
@@ -117,20 +124,17 @@ function ProjectCard({ p, i }) {
 export function Projects() {
   return (<section id="projects" className="section-pad relative overflow-hidden">
     <div aria-hidden className="pointer-events-none absolute inset-0 -z-10" style={{
-      backgroundImage: "linear-gradient(to bottom, oklch(0.72 0.19 155 / 4%) 1px, transparent 1px)",
+      backgroundImage: "linear-gradient(to bottom, rgba(245,166,35,0.04) 1px, transparent 1px)",
       backgroundSize: "100% 80px",
     }} />
     <div className="mx-auto max-w-6xl px-6">
       <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-end">
         <div>
-          <SectionLabel index="03" title="Featured Projects" />
-          <h2 className="mt-6 font-display text-nowrap text-4xl font-semibold leading-[1.02] tracking-tight sm:text-5xl">
-            Engineering projects, built for production.
+          <SectionLabel slug="postmortems" title="Featured Projects" />
+          <h2 className="mt-6 font-display text-balance text-4xl font-bold leading-[0.98] tracking-tight sm:text-5xl">
+            Every incident, resolved in production.
           </h2>
         </div>
-        {/* <p className="max-w-sm text-sm text-muted-foreground">
-          Reference-grade implementations - each repository includes IaC, pipelines, and documentation you can read end-to-end.
-        </p> */}
       </div>
       <div className="mt-20 space-y-28">
         {PROJECTS.map((p, i) => <ProjectCard key={p.num} p={p} i={i} />)}

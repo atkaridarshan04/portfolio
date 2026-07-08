@@ -25,17 +25,16 @@ export function Stack() {
   const [hoveredItem, setHoveredItem] = useState(null);
   const related = hoveredItem ? (RELATED[hoveredItem] ?? []) : [];
   return (<section id="stack" className="section-pad relative border-t border-hairline overflow-hidden">
-    {/* distinct background: inverted grid - white lines on dark, denser than hero */}
     <div aria-hidden className="pointer-events-none absolute inset-0 -z-10" style={{
-      backgroundImage: "linear-gradient(to right, oklch(0.72 0.19 155 / 4%) 1px, transparent 1px), linear-gradient(to bottom, oklch(0.72 0.19 155 / 4%) 1px, transparent 1px)",
+      backgroundImage: "linear-gradient(to right, rgba(245,166,35,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(245,166,35,0.04) 1px, transparent 1px)",
       backgroundSize: "32px 32px",
     }} />
     <div className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-background/60 to-background pointer-events-none" />
     <div className="mx-auto max-w-6xl px-6">
       <div className="grid grid-cols-1 gap-12 md:grid-cols-12">
         <div className="md:col-span-4">
-          <SectionLabel index="04" title="Tech Stack" />
-          <h2 className="mt-6 font-display text-balance text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
+          <SectionLabel slug="metrics" title="Tech Stack" />
+          <h2 className="mt-6 font-display text-balance text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
             The tools I reach for,
             <br />
             <span className="text-muted-foreground">grouped by intent.</span>
@@ -45,21 +44,22 @@ export function Stack() {
           </p>
         </div>
 
-        <div className="md:col-span-8 space-y-5">
-          {GROUPS.map((g, gi) => (<motion.div key={g.name} initial={{ opacity: 0, x: -12 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.5, delay: gi * 0.05, ease: [0.22, 1, 0.36, 1] }}>
-            <div className="mb-2 flex items-center gap-2">
-              <div className="grid h-6 w-6 place-items-center rounded-md bg-primary/10 text-primary">
-                <g.icon className="h-3.5 w-3.5" />
-              </div>
-              <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">{g.name}</span>
+        <div className="md:col-span-8 grid gap-4 sm:grid-cols-2">
+          {GROUPS.map((g, gi) => (<motion.div key={g.name} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.5, delay: gi * 0.04, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden rounded-md hairline bg-surface/50">
+            <div className="flex items-center gap-1.5 border-b border-hairline px-3 py-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-destructive/40" />
+              <span className="h-1.5 w-1.5 rounded-full bg-primary/40" />
+              <span className="h-1.5 w-1.5 rounded-full bg-status-good/40" />
+              <g.icon className="ml-2 h-3 w-3 text-primary" />
+              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{g.name}</span>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 p-3">
               {g.items.map((it) => {
                 const isHov = hoveredItem === it;
                 const isRel = related.includes(it);
-                return (<motion.span key={it} whileHover={{ y: -1 }} onMouseEnter={() => setHoveredItem(it)} onMouseLeave={() => setHoveredItem(null)} className={`cursor-default rounded-full px-3 py-1 font-mono text-[12px] hairline transition-all duration-200 ${isHov ? "bg-primary/20 text-primary shadow-[0_0_14px_-4px_oklch(0.72_0.19_155/_60%)] ring-1 ring-primary/40"
+                return (<motion.span key={it} whileHover={{ y: -1 }} onMouseEnter={() => setHoveredItem(it)} onMouseLeave={() => setHoveredItem(null)} className={`cursor-default rounded-sm px-2.5 py-1 font-mono text-[11px] hairline transition-all duration-200 ${isHov ? "bg-primary/20 text-primary shadow-[0_0_14px_-4px_rgba(245,166,35,0.55)] ring-1 ring-primary/40"
                   : isRel ? "bg-primary/10 text-primary/80 ring-1 ring-primary/25"
-                    : "bg-surface text-muted-foreground hover:bg-surface-elevated hover:text-foreground"}`}>
+                    : "bg-background text-muted-foreground hover:bg-surface-elevated hover:text-foreground"}`}>
                   {it}
                 </motion.span>);
               })}
