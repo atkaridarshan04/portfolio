@@ -12,11 +12,16 @@ export default defineConfig([
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,
-      reactHooks.configs.flat.recommended,
+      reactHooks.configs['recommended-latest'],
       reactRefresh.configs.vite,
     ],
     languageOptions: {
       globals: globals.browser,
+    },
+    rules: {
+      // shadcn/ui components intentionally co-export variant helpers (e.g.
+      // `buttonVariants`) alongside the component - not a real Fast Refresh bug.
+      'react-refresh/only-export-components': 'warn',
     },
   },
 ])

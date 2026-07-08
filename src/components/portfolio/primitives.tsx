@@ -70,7 +70,7 @@ export function AmbientTopology() {
       </defs>
       {edges.map(([a, b], i) => (<line key={i} x1={nodes[a].x} y1={nodes[a].y} x2={nodes[b].x} y2={nodes[b].y} stroke="currentColor" strokeOpacity="0.18" strokeWidth="0.6" />))}
       {flowing.map((idx, i) => {
-        const [a, b] = edges[idx % edges.length];
+        const [a] = edges[idx % edges.length];
         return (<circle key={`pkt-${i}`} cx={nodes[a].x} cy={nodes[a].y} r="1.5" fill="currentColor" opacity={0.15 + (i % 4) * 0.08} />);
       })}
       {nodes.map((n, i) => (<g key={i}>
