@@ -63,7 +63,7 @@ export function Contact() {
           <div className="flex flex-col divide-y divide-hairline">
             {[
               { label: "Email", tier: "primary", href: `mailto:${EMAIL}`, ext: false },
-              { label: "LinkedIn", tier: "secondary", href: "https://linkedin.com/in/darshan-atkari", ext: true },
+              { label: "LinkedIn", tier: "secondary", href: "https://www.linkedin.com/in/darshan-atkari/", ext: true },
               { label: "GitHub", tier: "tertiary", href: "https://github.com/atkaridarshan04", ext: true },
             ].map((c) => (
               <a key={c.label} href={c.href} {...(c.ext ? { target: "_blank", rel: "noreferrer" } : {})}
