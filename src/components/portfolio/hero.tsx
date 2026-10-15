@@ -1,7 +1,85 @@
 import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import profileImg from "@/assets/profile.jpg";
-import { Ext, Magnetic, Marquee, Reveal, SECTIONS, StatusDot, useActiveSection } from "./primitives";
+import { Ext, Magnetic, Marquee, SECTIONS, StatusDot, useActiveSection } from "./primitives";
+
+/* ── Arrival ──────────────────────────────────────────────────
+   The first screen builds itself once, in a fixed order, and is done
+   inside a second and a half. It is choreography rather than a blanket
+   stagger: the portrait wipes in from the edge it bleeds off, the name
+   is set letter by letter, the rule beside the paragraph draws itself,
+   and one amber sweep crosses the whole thing on the way past.
+
+   The moves are CSS animations with `backwards` fill, driven by nothing
+   but an animation-delay. If they never run the elements are simply at
+   their natural state - visible - so a missed frame can never strand
+   the hero copy. Nothing below the fold waits on any of it.         */
+const T = {
+  nav: 0,
+  portrait: 80,
+  sweep: 120,
+  eyebrow: 220,
+  name: 300,
+  surname: 420,
+  tagline: 640,
+  rule: 680,
+  body: 720,
+  cta: 820,
+  marquee: 920,
+  typist: 1000,
+};
+const ms = (n) => `${n}ms`;
+
+/* Rise - the supporting move. Small and quick: 12px and 550ms, so it
+   reads as the page settling rather than as everything floating up. */
+function Rise({ children, delay = 0, className = "", as: Tag = "div" }) {
+  return (
+    <Tag className={`arrive-rise ${className}`} style={{ animationDelay: ms(delay) }}>
+      {children}
+    </Tag>
+  );
+}
+
+/* LetterReveal - the name, set one letter at a time out of a clipped
+   line. The condensed face is uppercase, so a tight mask is safe; the
+   padding/margin pair keeps the cap-height from being shaved off. */
+function LetterReveal({ text, delay = 0, stagger = 28, className = "" }) {
+  return (
+    <span
+      className={`block overflow-hidden ${className}`}
+      style={{ paddingBottom: "0.08em", marginBottom: "-0.08em" }}
+    >
+      {Array.from(text).map((ch, i) => (
+        <span
+          key={`${ch}-${i}`}
+          className="arrive-letter"
+          style={{ animationDelay: ms(delay + i * stagger) }}
+        >
+          {ch === " " ? "\u00A0" : ch}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/* Writing - the body copy set word by word, left to right. A paragraph
+   that simply switches on lands with a thud; staggering the words a few
+   milliseconds apart reads the way a line is written, and because the
+   unit is the word it wraps naturally instead of needing the line breaks
+   known in advance.                                                    */
+function Writing({ text, delay = 0, stagger = 14, className = "" }) {
+  const words = text.split(" ");
+  return (
+    <span className={className}>
+      {words.map((word, i) => (
+        <span key={`${word}-${i}`} className="arrive-word" style={{ animationDelay: ms(delay + i * stagger) }}>
+          {word}
+          {i < words.length - 1 ? "\u00A0" : ""}
+        </span>
+      ))}
+    </span>
+  );
+}
 
 /* ── Typewriter role cycling ─────────────────────────────────── */
 function RoleCycler() {
@@ -9,7 +87,15 @@ function RoleCycler() {
   const [roleIdx, setRoleIdx] = useState(0);
   const [displayed, setDisplayed] = useState("");
   const [deleting, setDeleting] = useState(false);
+  /* hold the keyboard until the name has finished setting, so the two
+     are not competing for attention in the first second */
+  const [armed, setArmed] = useState(false);
   useEffect(() => {
+    const t = setTimeout(() => setArmed(true), T.typist);
+    return () => clearTimeout(t);
+  }, []);
+  useEffect(() => {
+    if (!armed) return;
     const target = roles[roleIdx];
     if (!deleting && displayed.length < target.length) {
       const t = setTimeout(() => setDisplayed(target.slice(0, displayed.length + 1)), 60);
@@ -28,7 +114,7 @@ function RoleCycler() {
       setRoleIdx((p) => (p + 1) % roles.length);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayed, deleting, roleIdx]);
+  }, [displayed, deleting, roleIdx, armed]);
   return (<span className="font-mono text-sm text-primary">
     {displayed}
     <span className="ml-0.5 inline-block h-4 w-px bg-primary align-middle caret-blink" />
@@ -60,7 +146,7 @@ export function Nav() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-  return (<header className="fixed inset-x-0 top-0 z-50">
+  return (<header className="arrive-rise fixed inset-x-0 top-0 z-50" style={{ animationDelay: ms(T.nav) }}>
     <div className={`flex items-center justify-between gap-4 border-b px-5 py-3 transition-state sm:px-8 ${scrolled ? "border-hairline bg-background/95" : "border-transparent bg-transparent"}`}>
       <a href="#top" className="group flex shrink-0 items-center gap-2.5">
         <span className="grid h-6 w-6 place-items-center rounded-[3px] bg-primary font-display text-[13px] font-medium leading-none text-primary-foreground">DA</span>
@@ -114,6 +200,14 @@ export function Hero() {
   const fade = useTransform(scrollYProgress, [0, 0.9], [1, 0.25]);
 
   return (<section id="top" ref={ref} className="relative isolate overflow-hidden grain">
+    <div
+      aria-hidden
+      className="arrive-sweep pointer-events-none absolute inset-x-0 top-0 z-30 h-[28vh]"
+      style={{
+        animationDelay: ms(T.sweep),
+        background: "linear-gradient(to bottom, transparent, rgba(245,166,35,0.07) 45%, rgba(245,166,35,0.13) 55%, transparent)",
+      }}
+    />
     {/* atmosphere */}
     <motion.div style={{ y: bgY, opacity: fade }} aria-hidden className="absolute inset-0 -z-10">
       <div className="absolute inset-0 dot-matrix opacity-40" style={{
@@ -130,11 +224,13 @@ export function Hero() {
         style={{ y: portraitY }}
         className="relative order-2 h-[56vh] w-full lg:absolute lg:inset-y-0 lg:right-0 lg:order-none lg:h-full lg:w-[44%] xl:w-[42%]"
       >
+       <div className="arrive-wipe absolute inset-0" style={{ animationDelay: ms(T.portrait) }}>
         <img
           src={profileImg}
           alt="Portrait of Darshan Atkari"
           width={535} height={1024}
-          className="duotone h-full w-full object-cover object-[center_18%] lg:object-[center_22%]"
+          className="arrive-zoom duotone h-full w-full object-cover object-[center_18%] lg:object-[center_22%]"
+          style={{ animationDelay: ms(T.portrait) }}
         />
         {/* dissolve: downward on a phone, leftward on a wide screen */}
         <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-background/10 lg:hidden" />
@@ -147,39 +243,49 @@ export function Hero() {
         <div aria-hidden className="absolute inset-0" style={{
           background: "radial-gradient(ellipse 58% 48% at 62% 40%, transparent 28%, rgba(11,14,17,0.38) 68%, rgba(11,14,17,0.85) 100%)",
         }} />
+       </div>
       </motion.div>
 
       {/* ── the type ─────────────────────────────────────────────── */}
       <div className="relative order-1 mx-auto flex w-full max-w-6xl flex-col justify-center px-6 pb-10 pt-32 lg:min-h-screen lg:pb-28 lg:pt-28">
         <div className="max-w-[38rem]">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 label-mono text-muted-foreground">
+          <Rise delay={T.eyebrow} className="flex flex-wrap items-center gap-x-3 gap-y-1 label-mono text-muted-foreground">
             <span className="inline-flex items-center gap-2 whitespace-nowrap">
               <StatusDot />
               currently deployed as
             </span>
             <RoleCycler />
-          </div>
+          </Rise>
 
           <h1 className="mt-7 font-display display-hero">
-            <Reveal as="span" trigger="mount" className="block">Darshan</Reveal>
-            <Reveal as="span" trigger="mount" delay={0.1} className="block text-primary">Atkari</Reveal>
+            <LetterReveal text="Darshan" delay={T.name} />
+            <LetterReveal text="Atkari" delay={T.surname} className="text-primary" />
           </h1>
 
-          <p className="mt-6 font-mono text-sm tracking-tight">
+          <Rise as="p" delay={T.tagline} className="mt-6 font-mono text-sm tracking-tight">
             <span className="text-shine">automating the present</span>
             <span className="px-2 text-muted-foreground/50">·</span>
             <span className="text-shine">scaling the future</span>
-          </p>
+          </Rise>
 
-          <p className="mt-6 w-full border-l border-hairline pl-5 text-[15px] leading-relaxed text-muted-foreground sm:text-base">
-            I build the unseen layer beneath modern software — cloud-native infrastructure,
-            Kubernetes workloads, DevSecOps pipelines, and MLOps systems — engineered for
-            reliability, observability, and automation at scale.
-          </p>
+          {/* the rule draws itself down before the copy arrives beside it */}
+          <div className="relative mt-6 w-full max-w-xl pl-5">
+            <span
+              aria-hidden
+              className="arrive-draw absolute left-0 top-0 h-full w-px bg-hairline"
+              style={{ animationDelay: ms(T.rule) }}
+            />
+            <p className="text-[15px] leading-relaxed text-muted-foreground sm:text-base">
+              <Writing
+                delay={T.body}
+                text="I build the unseen layer beneath modern software — cloud-native infrastructure, Kubernetes workloads, DevSecOps pipelines, and MLOps systems — engineered for reliability, observability, and automation at scale."
+              />
+            </p>
+          </div>
 
           <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
             <Magnetic>
-              <a href="#projects" className="group inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-state hover:brightness-110">
+              <a href="#projects" style={{ animationDelay: ms(T.cta) }} className="arrive-left group inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-state hover:brightness-110">
                 View the work
                 <span aria-hidden className="transition-state group-hover:translate-x-0.5">→</span>
               </a>
@@ -188,9 +294,10 @@ export function Hero() {
               { label: "GitHub", href: "https://github.com/atkaridarshan04" },
               { label: "LinkedIn", href: "https://www.linkedin.com/in/darshan-atkari/" },
               { label: "Résumé", href: "https://drive.google.com/file/d/1j7TD_B6cMMWz6VkXwYCfYubT49IjnLzy/view" },
-            ].map((l) => (
+            ].map((l, i) => (
               <a key={l.label} href={l.href} target="_blank" rel="noreferrer"
-                className="group relative inline-flex items-center gap-1.5 pb-1 font-mono text-sm text-muted-foreground transition-state hover:text-foreground">
+                style={{ animationDelay: ms(T.cta + 150 + i * 90) }}
+                className="arrive-left group relative inline-flex items-center gap-1.5 pb-1 font-mono text-sm text-muted-foreground transition-state hover:text-foreground">
                 {l.label} <Ext className="opacity-50 group-hover:opacity-100" />
                 <span aria-hidden className="absolute inset-x-0 bottom-0 h-px bg-hairline" />
                 <span aria-hidden className="absolute inset-x-0 bottom-0 h-px origin-left scale-x-0 bg-primary transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-x-100" />
@@ -202,7 +309,7 @@ export function Hero() {
     </div>
 
     {/* the stack, running past */}
-    <div className="relative border-y border-hairline bg-surface/30 py-3.5">
+    <Rise delay={T.marquee} className="relative border-y border-hairline bg-surface/30 py-3.5">
       <Marquee duration={54}>
         {["Kubernetes", "Terraform", "ArgoCD", "AWS", "Docker", "Helm", "Prometheus", "Grafana", "GitHub Actions", "Istio", "Trivy", "MLflow", "KServe", "Argo Workflows", "Kyverno", "OpenTelemetry", "Vault", "Ansible"].map((t) => (
           <span key={t} className="flex items-center gap-7 px-3.5 font-mono text-[13px] text-muted-foreground/70">
@@ -211,7 +318,7 @@ export function Hero() {
           </span>
         ))}
       </Marquee>
-    </div>
+    </Rise>
 
     {/* terminal interlude */}
     <div className="mx-auto max-w-6xl px-6 py-20 sm:py-24">
