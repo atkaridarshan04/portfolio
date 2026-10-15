@@ -1,8 +1,8 @@
 import { Ext, Reveal, SectionLabel, WordReveal, useSpotlight } from "./primitives";
 
 /* ── Certifications ───────────────────────────────────────────
-   Same ledger grammar as the SLOs and the evidence list: numeral,
-   name, issuer, a link that leaves the page. No badge icons.     */
+   Same ledger grammar as the SLOs and the stack: numeral, name,
+   issuer, a link that leaves the page. No badge icons.           */
 const CERTS = [
   {
     name: "AWS Cloud Technology Consultant Professional Certificate",
@@ -29,7 +29,7 @@ export function Certifications() {
     <div className="mx-auto max-w-6xl px-6">
       <div className="grid grid-cols-1 gap-10 md:grid-cols-12 md:items-end">
         <div className="md:col-span-7">
-          <SectionLabel slug="compliance" state="audited" />
+          <SectionLabel slug="certifications" state="audited" />
           <Reveal as="h2" className="mt-7 font-display display-section text-balance">
             Verified by the<br />
             <span className="text-muted-foreground">vendors I build on.</span>

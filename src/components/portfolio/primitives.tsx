@@ -16,11 +16,11 @@ import { useEffect, useState } from "react";
 export const SECTIONS = [
   { id: "top", label: "Overview" },
   { id: "domains", label: "Domains" },
-  { id: "projects", label: "Postmortems" },
+  { id: "projects", label: "Projects" },
   { id: "slo", label: "SLOs" },
   { id: "stack", label: "Stack" },
-  { id: "certs", label: "Compliance" },
-  { id: "contact", label: "Escalate" },
+  { id: "certs", label: "Certifications" },
+  { id: "contact", label: "Contact" },
 ];
 
 /* ── Reveal — a clip wipe, the page's one entrance gesture ─────

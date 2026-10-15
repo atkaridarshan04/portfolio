@@ -180,7 +180,7 @@ export function Hero() {
           <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
             <Magnetic>
               <a href="#projects" className="group inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-state hover:brightness-110">
-                View postmortems
+                View the work
                 <span aria-hidden className="transition-state group-hover:translate-x-0.5">→</span>
               </a>
             </Magnetic>

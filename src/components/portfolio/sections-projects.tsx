@@ -190,13 +190,14 @@ export function Projects() {
     <div className="mx-auto max-w-6xl px-6">
       <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-end">
         <div>
-          <SectionLabel slug="postmortems" />
+          <SectionLabel slug="projects" />
           <Reveal as="h2" className="mt-7 font-display display-section text-balance">
-            Every incident,<br />resolved in production.
+            Four systems.<br />
+            <span className="text-muted-foreground">Built to be operated.</span>
           </Reveal>
         </div>
         <p className="max-w-xs pb-2 text-sm leading-relaxed text-muted-foreground">
-          <WordReveal text="Four systems, written up the way an on-call engineer would: what it does, what it resolved, what it runs on." />
+          <WordReveal text="Each one written up the way I would hand it over: what it does, what it proves, what it runs on." />
         </p>
       </div>
 
