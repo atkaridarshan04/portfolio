@@ -1,139 +1,185 @@
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useState } from "react";
-import { Cloud, Container, ShieldCheck, Brain, Eye, Workflow, Zap, Boxes, } from "lucide-react";
-import { SectionLabel, PillarHoverFx } from "./primitives";
-/* ── Service Level Objectives (formerly "Philosophy") ─────────── */
+import { Reveal, SectionLabel, WordReveal, useSpotlight } from "./primitives";
+
+/* ── Service Level Objectives ─────────────────────────────────
+   Gauges, not a bullet list: each commitment carries a target and a
+   bar that fills when you reach it. The prose underneath is one line
+   now — six paragraphs stacked in a grid is a wall, not a statement. */
+const OBJECTIVES = [
+  { k: "Automate", target: "manual toil", value: "0%", fill: 1.0, t: "Every manual step is a future incident." },
+  { k: "Reliable", target: "error budget", value: "99.9%", fill: 0.95, t: "Designed for failure, not around it." },
+  { k: "Observable", target: "blind spots", value: "0", fill: 1.0, t: "You cannot operate what you cannot see." },
+  { k: "Cloud Native", target: "vendor lock-in", value: "none", fill: 0.9, t: "Declarative, loosely coupled, elastic." },
+  { k: "Resilient", target: "blast radius", value: "contained", fill: 0.85, t: "Self-healing workloads, bounded failure." },
+  { k: "Operational", target: "recovery time", value: "<30min", fill: 0.8, t: "Runbooks, on-call hygiene, post-mortems." },
+];
+
+function Objective({ o, i }) {
+  const reduce = useReducedMotion();
+  const spot = useSpotlight();
+  const [on, setOn] = useState(false);
+  return (
+    <motion.div
+      {...spot}
+      variants={{}}
+      onMouseEnter={() => setOn(true)}
+      onMouseLeave={() => setOn(false)}
+      className={`spotlight group relative overflow-hidden rounded-xl panel p-5 transition-state sm:p-6 ${on ? "-translate-y-0.5 bg-surface-elevated" : "bg-surface/60"}`}
+    >
+      {/* top edge lights along its length */}
+      <span className={`pointer-events-none absolute inset-x-0 top-0 h-px origin-left bg-gradient-to-r from-primary via-primary/60 to-transparent transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${on ? "scale-x-100" : "scale-x-0"}`} />
+
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="font-mono text-[11px] text-primary/70">{String(i + 1).padStart(2, "0")}</span>
+        <span className="label-mono text-muted-foreground/60">{o.target}</span>
+      </div>
+
+      <h3 className="mt-4 heading-sans text-lg leading-tight">{o.k}</h3>
+      <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{o.t}</p>
+
+      {/* the gauge */}
+      <div className="mt-5">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="label-mono text-muted-foreground/50">measured</span>
+          <span className="font-mono text-[13px] text-primary">{o.value}</span>
+        </div>
+        <div className="mt-2 h-[3px] w-full overflow-hidden rounded-full bg-hairline">
+          <motion.div
+            className="h-full origin-left rounded-full bg-gradient-to-r from-primary/50 to-primary"
+            variants={reduce ? {} : { hidden: { scaleX: 0 }, shown: { scaleX: o.fill } }}
+            style={{ transformOrigin: "left" }}
+            transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
+          />
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 export function Philosophy() {
-  const pillars = [
-    { icon: Workflow, k: "Automate", metric: "manual toil → 0%", t: "Every manual step is a future incident - codified, versioned, repeatable." },
-    { icon: ShieldCheck, k: "Reliable", metric: "error budget → 99.9%", t: "Designed for failure: SLOs, error budgets, graceful degradation by default." },
-    { icon: Eye, k: "Observable", metric: "blind spots → 0", t: "Metrics, logs and traces unified - you cannot operate what you cannot see." },
-    { icon: Cloud, k: "Cloud Native", metric: "vendor lock-in → none", t: "Loosely coupled, declarative, elastic - built to live on Kubernetes." },
-    { icon: Boxes, k: "Resilient", metric: "blast radius → contained", t: "Self-healing workloads, autoscaling, blast-radius containment by design." },
-    { icon: Zap, k: "Operational", metric: "recovery time → <30min", t: "Runbooks, on-call hygiene, post-mortems - excellence is a daily practice." },
-  ];
-  const [hovered, setHovered] = useState(null);
-  return (<section id="philosophy" className="section-pad relative overflow-hidden">
+  return (<section id="slo" className="section-pad relative overflow-hidden">
+    {/* section texture: horizontal rack rails */}
+    <div aria-hidden className="pointer-events-none absolute inset-0 -z-10" style={{
+      backgroundImage: "linear-gradient(to bottom, rgba(245,166,35,0.045) 1px, transparent 1px)",
+      backgroundSize: "100% 88px",
+      maskImage: "radial-gradient(ellipse 70% 60% at 50% 50%, black 20%, transparent 85%)",
+      WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 50% 50%, black 20%, transparent 85%)",
+    }} />
+
     <div className="mx-auto max-w-6xl px-6">
       <div className="grid grid-cols-1 gap-10 md:grid-cols-12 md:items-end">
         <div className="md:col-span-7">
-          <SectionLabel slug="slo" title="Service Level Objectives" />
-          <h2 className="mt-6 font-display text-balance text-4xl font-bold leading-[0.98] tracking-tight sm:text-5xl md:text-6xl">
+          <SectionLabel slug="slo" />
+          <Reveal as="h2" className="mt-7 font-display display-section text-balance">
             Six commitments.<br />
             <span className="text-primary">Measured, not promised.</span>
-          </h2>
+          </Reveal>
         </div>
-        <p className="md:col-span-5 max-w-md text-base text-muted-foreground">
-          Software is no longer shipped, it is operated. These are the targets I hold
-          every system to - not aspirations, commitments.
+        <p className="max-w-md text-[15px] leading-relaxed text-muted-foreground md:col-span-5">
+          <WordReveal text="Software is no longer shipped, it is operated. These are the targets I hold every system to — commitments, not aspirations." />
         </p>
       </div>
 
-      <div className="mt-14 grid grid-cols-1 gap-px overflow-hidden rounded-lg hairline bg-hairline sm:grid-cols-2 lg:grid-cols-3">
-        {pillars.map((p, i) => {
-          const isHovered = hovered === i;
-          const isRelated = hovered !== null && Math.abs(hovered - i) === 1;
-          return (<motion.div key={p.k} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.5, delay: i * 0.05 }} onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)} className={`group relative overflow-hidden bg-background p-7 transition-all duration-400 ${isHovered ? "bg-surface/80 shadow-[inset_0_0_30px_-10px_rgba(245,166,35,0.18)]" :
-            isRelated ? "bg-surface/40" : "hover:bg-surface/50"}`}>
-            <PillarHoverFx />
-            <div className="flex items-center gap-3">
-              <div className={`relative grid h-9 w-9 place-items-center rounded-md bg-primary/10 text-primary transition duration-300 ${isHovered ? "bg-primary/25 shadow-[0_0_20px_-4px_rgba(245,166,35,0.6)] scale-110" :
-                isRelated ? "bg-primary/18 shadow-[0_0_12px_-4px_rgba(245,166,35,0.35)]" : "group-hover:bg-primary/20"}`}>
-                <p.icon className="h-4 w-4" />
-                <span className="pointer-events-none absolute inset-0 rounded-md ring-1 ring-primary/30 opacity-0 transition group-hover:opacity-100" />
-              </div>
-              <span className="font-display text-lg font-bold tracking-tight">{p.k}</span>
-              <span className={`ml-auto h-1.5 w-1.5 rounded-full transition-all duration-300 ${isHovered ? "bg-primary shadow-[0_0_8px_rgba(245,166,35,0.8)] scale-125" : "bg-primary/40 group-hover:bg-primary"}`} />
-            </div>
-            <div className="mt-2.5 font-mono text-[11px] tracking-tight text-primary">{p.metric}</div>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.t}</p>
-            {/* connection line at bottom */}
-            <div className={`pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent transition-opacity duration-500 ${isHovered || isRelated ? "opacity-100" : "opacity-0"}`} />
-            {/* grid response on hover */}
-            {isHovered && (<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-hidden className="pointer-events-none absolute inset-0 -z-10" style={{
-              backgroundImage: "linear-gradient(to right, rgba(245,166,35,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(245,166,35,0.05) 1px, transparent 1px)",
-              backgroundSize: "24px 24px",
-            }} />)}
-          </motion.div>);
-        })}
-      </div>
+      <motion.div
+        initial="hidden"
+        whileInView="shown"
+        viewport={{ once: true, margin: "-12% 0px -12% 0px" }}
+        variants={{ shown: { transition: { staggerChildren: 0.07 } } }}
+        className="mt-14 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3"
+      >
+        {OBJECTIVES.map((o, i) => <Objective key={o.k} o={o} i={i} />)}
+      </motion.div>
     </div>
   </section>);
 }
-/* ── Engineering Domains - 4 combined cards ──────────────────── */
+
+/* ── Engineering Domains ──────────────────────────────────────
+   Numbered plates with depth. No icon on each one - the numeral and
+   the lit edge carry the structure.                                */
+const DOMAINS = [
+  {
+    name: "Cloud & Infrastructure",
+    desc: "Multi-cloud architecture, Terraform modules, GitOps workflows and drift-free environments — landing zones through to production IaC.",
+    tags: ["Cloud Architecture", "IaC", "Terraform", "GitOps"],
+  },
+  {
+    name: "Containers & Kubernetes",
+    desc: "Kubernetes, Helm, service mesh and progressive delivery with Argo Rollouts — workloads that self-heal and scale.",
+    tags: ["Kubernetes", "Helm", "ArgoCD", "Service Mesh"],
+  },
+  {
+    name: "DevSecOps & Observability",
+    desc: "Shift-left security with SAST, SCA, secrets scanning and policy as code — unified with metrics, logs and traces via OpenTelemetry.",
+    tags: ["GitHub Actions", "Trivy", "OTel", "Grafana"],
+  },
+  {
+    name: "MLOps & Reliability",
+    desc: "Reproducible ML pipelines, model registries and container-based serving — backed by SLOs, error budgets and incident management.",
+    tags: ["MLflow", "KServe", "SLOs", "Chaos Eng"],
+  },
+];
+
+function DomainPlate({ d, i }) {
+  const spot = useSpotlight();
+  const [on, setOn] = useState(false);
+  return (
+    <div
+      {...spot}
+      onMouseEnter={() => setOn(true)}
+      onMouseLeave={() => setOn(false)}
+      className={`spotlight group relative overflow-hidden rounded-xl panel p-7 transition-state sm:p-8 ${on ? "-translate-y-0.5 bg-surface-elevated" : "bg-surface/60"}`}
+    >
+      <span className={`pointer-events-none absolute inset-x-0 top-0 h-px origin-left bg-gradient-to-r from-primary via-primary/50 to-transparent transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${on ? "scale-x-100" : "scale-x-0"}`} />
+      {/* the numeral is the ornament */}
+      <span aria-hidden className={`pointer-events-none absolute right-5 top-3 font-display text-[5.5rem] leading-none tabular-nums transition-state ${on ? "text-primary/12" : "text-foreground/[0.05]"}`}>
+        {String(i + 1).padStart(2, "0")}
+      </span>
+
+      <div className="relative flex items-center gap-3">
+        <span className="h-px w-6 bg-primary/50" />
+        <span className={`label-mono transition-state ${on ? "text-primary" : "text-muted-foreground/60"}`}>
+          domain {String(i + 1).padStart(2, "0")}
+        </span>
+      </div>
+
+      <h3 className="relative mt-4 heading-sans text-[1.3rem] leading-tight sm:text-[1.45rem]">{d.name}</h3>
+      <p className={`relative mt-3 max-w-sm text-[13.5px] leading-relaxed transition-state ${on ? "text-foreground/80" : "text-muted-foreground"}`}>
+        {d.desc}
+      </p>
+      <div className="relative mt-5 flex flex-wrap gap-1.5">
+        {d.tags.map((t) => <span key={t} className="chip">{t}</span>)}
+      </div>
+    </div>
+  );
+}
+
 export function Domains() {
-  const domains = [
-    {
-      icon: Cloud,
-      name: "Cloud & Infrastructure",
-      desc: "Multi-cloud architecture, Terraform modules, GitOps workflows, and drift-free environments - from landing zones to production IaC.",
-      tags: ["Cloud Architecture", "IaC", "Terraform", "GitOps"],
-      accent: "from-primary/30",
-    },
-    {
-      icon: Container,
-      name: "Containers & Kubernetes",
-      desc: "Kubernetes, Helm, service mesh, progressive delivery with Argo Rollouts - running workloads that self-heal and scale.",
-      tags: ["Kubernetes", "Helm", "ArgoCD", "Service Mesh"],
-      accent: "from-accent/25",
-    },
-    {
-      icon: ShieldCheck,
-      name: "DevSecOps & Observability",
-      desc: "Shift-left security with SAST, SCA, secrets scanning, policy as code - unified with metrics, logs, and traces via OpenTelemetry.",
-      tags: ["GitHub Actions", "Trivy", "OTel", "Grafana"],
-      accent: "from-primary/30",
-    },
-    {
-      icon: Brain,
-      name: "MLOps & Reliability",
-      desc: "Reproducible ML pipelines, model registries, container-based serving - backed by SLOs, error budgets, and incident management.",
-      tags: ["MLflow", "KServe", "SLOs", "Chaos Eng"],
-      accent: "from-accent/25",
-    },
-  ];
-  const [active, setActive] = useState(null);
   return (<section id="domains" className="section-pad relative overflow-hidden">
     <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-      <div className="absolute left-1/2 top-1/2 h-[500px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/4 blur-[160px]" />
+      <div className="absolute left-1/2 top-1/2 h-[500px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/6 blur-[160px]" />
+      <div className="absolute inset-0 dot-matrix opacity-35" style={{
+        maskImage: "radial-gradient(ellipse 60% 55% at 50% 50%, black 15%, transparent 80%)",
+        WebkitMaskImage: "radial-gradient(ellipse 60% 55% at 50% 50%, black 15%, transparent 80%)",
+      }} />
     </div>
+
     <div className="mx-auto max-w-6xl px-6">
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-12 md:items-end mb-12">
-        <div className="md:col-span-5">
-          <SectionLabel slug="domains" title="Engineering Domains" />
-          <h2 className="mt-6 font-display text-balance text-4xl font-bold leading-[0.98] tracking-tight sm:text-5xl">
+      <div className="mb-14 grid grid-cols-1 gap-6 md:grid-cols-12 md:items-end">
+        <div className="md:col-span-6">
+          <SectionLabel slug="domains" />
+          <Reveal as="h2" className="mt-7 font-display display-section text-balance">
             Four domains.<br />
             <span className="text-muted-foreground">End to end.</span>
-          </h2>
+          </Reveal>
         </div>
-        <p className="md:col-span-5 md:col-start-8 max-w-md text-sm text-muted-foreground">
-          From infrastructure design to ML serving - every layer is connected and production-grade.
+        <p className="max-w-md text-sm leading-relaxed text-muted-foreground md:col-span-5 md:col-start-8">
+          <WordReveal text="From infrastructure design to ML serving — every layer connected, every layer production-grade." />
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {domains.map((d, i) => {
-          const isActive = active === i;
-          return (<motion.div key={d.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }} transition={{ duration: 0.5, delay: i * 0.06 }} onMouseEnter={() => setActive(i)} onMouseLeave={() => setActive(null)} className={`group relative overflow-hidden rounded-lg hairline bg-surface/60 p-6 transition-all duration-300 cursor-default ${isActive
-            ? "bg-surface-elevated ring-1 ring-primary/40 shadow-[0_0_30px_-8px_rgba(245,166,35,0.3)]"
-            : "hover:bg-surface/80"}`}>
-            <div className={`absolute inset-x-0 top-0 h-px bg-gradient-to-r ${d.accent} via-transparent to-transparent transition-opacity duration-300 ${isActive ? "opacity-100" : "opacity-50"}`} />
-
-            <div className="flex items-start justify-between gap-3">
-              <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-md bg-primary/10 text-primary transition duration-300 ${isActive ? "bg-primary/25 shadow-[0_0_16px_-2px_rgba(245,166,35,0.55)] scale-110" : "group-hover:bg-primary/18"}`}>
-                <d.icon className="h-5 w-5" />
-              </div>
-            </div>
-
-            <h3 className="mt-4 font-display text-lg font-bold tracking-tight leading-snug">{d.name}</h3>
-            <p className={`mt-2 text-sm leading-relaxed text-muted-foreground transition-opacity duration-300 ${isActive ? "opacity-100" : "opacity-75"}`}>
-              {d.desc}
-            </p>
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {d.tags.map(t => (<span key={t} className="rounded-sm hairline bg-background/60 px-2.5 py-0.5 font-mono text-[10px] text-muted-foreground">{t}</span>))}
-            </div>
-          </motion.div>);
-        })}
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+        {DOMAINS.map((d, i) => <DomainPlate key={d.name} d={d} i={i} />)}
       </div>
     </div>
   </section>);

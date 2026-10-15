@@ -1,48 +1,150 @@
 /**
  * Shared motion primitives, backgrounds, and micro-components.
  * Kept in one file to share SVG gradient IDs safely.
+ *
+ * Motion rules for the whole site:
+ *   1. Entrances are rare. Only a headline earns one, and it wipes rather
+ *      than fades-and-slides. Body copy is simply there when you arrive.
+ *   2. Continuous, scroll- and pointer-linked motion does the real work:
+ *      the rail, the topology, the project plates.
+ *   3. State changes (hover, focus) are mechanical - ~140ms, no easing drama.
  */
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
 import { useEffect, useState } from "react";
-/* ── shared motion presets ───────────────────────────────────── */
-export const fade = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.65, ease: [0.22, 1, 0.36, 1] } },
-};
-export const stagger = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
-};
-/* ── SectionLabel — a status-page "component" row ────────────── */
-export function SectionLabel({ slug, title }) {
-  return (<div className="flex items-center gap-3">
-    <span className="inline-flex items-center gap-1.5 rounded-sm bg-status-good/10 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-status-good ring-1 ring-status-good/25">
-      <StatusDot />
-      operational
-    </span>
-    <div className="h-px w-6 bg-hairline" />
-    <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-      component / {slug}
-    </span>
-    {title ? <span className="sr-only">{title}</span> : null}
-  </div>);
+
+/* ── Section registry — shared by the nav and the rail ───────── */
+export const SECTIONS = [
+  { id: "top", label: "Overview" },
+  { id: "domains", label: "Domains" },
+  { id: "projects", label: "Postmortems" },
+  { id: "slo", label: "SLOs" },
+  { id: "stack", label: "Stack" },
+  { id: "certs", label: "Compliance" },
+  { id: "contact", label: "Escalate" },
+];
+
+/* ── Reveal — a clip wipe, the page's one entrance gesture ─────
+   No fade-up. The headline is uncovered left-to-right, like a plotter
+   drawing it, then nothing else on the page moves on arrival.        */
+export function Reveal({ children, as = "div", delay = 0, trigger = "view", className = "" }) {
+  const reduce = useReducedMotion();
+  const Tag = motion[as] ?? motion.div;
+  if (reduce) return <Tag className={className}>{children}</Tag>;
+  const hidden = { clipPath: "inset(0 100% 0 0)" };
+  const shown = { clipPath: "inset(0 0% 0 0)" };
+  const timing = { duration: 0.95, delay, ease: [0.16, 1, 0.3, 1] };
+  return trigger === "mount"
+    ? <Tag className={className} initial={hidden} animate={shown} transition={timing}>{children}</Tag>
+    : <Tag className={className} initial={hidden} whileInView={shown} viewport={{ once: true, margin: "-10% 0px -10% 0px" }} transition={timing}>{children}</Tag>;
 }
-/* ── SectionMini ─────────────────────────────────────────────── */
-export function SectionMini({ label }) {
-  return (<div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-    <span className="h-1 w-1 rounded-full bg-primary" />
-    {label}
-  </div>);
+
+/* ── useActiveSection — drives both nav and rail ─────────────── */
+export function useActiveSection() {
+  const [active, setActive] = useState(SECTIONS[0].id);
+  useEffect(() => {
+    const els = SECTIONS.map((s) => document.getElementById(s.id)).filter(Boolean);
+    const io = new IntersectionObserver((entries) => {
+      const visible = entries.filter((e) => e.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (visible?.target.id) setActive(visible.target.id);
+    }, { rootMargin: "-40% 0px -55% 0px", threshold: [0, 0.25, 0.6, 1] });
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+  return active;
 }
+
+/* ── usePointerParallax — normalised pointer, spring-smoothed ──
+   Returns two motion values in [-1, 1]. Layers multiply them by their
+   own depth so the background has real parallax instead of sitting flat. */
+export function usePointerParallax() {
+  const reduce = useReducedMotion();
+  const px = useMotionValue(0);
+  const py = useMotionValue(0);
+  const x = useSpring(px, { stiffness: 60, damping: 20, mass: 0.6 });
+  const y = useSpring(py, { stiffness: 60, damping: 20, mass: 0.6 });
+  useEffect(() => {
+    if (reduce) return;
+    const onMove = (e) => {
+      px.set((e.clientX / window.innerWidth) * 2 - 1);
+      py.set((e.clientY / window.innerHeight) * 2 - 1);
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => window.removeEventListener("pointermove", onMove);
+  }, [px, py, reduce]);
+  return { x, y };
+}
+
+/* ── ScrollRail — the site's wayfinding, as a rack unit list ───
+   Lives in the left gutter from xl up, where there is margin to spare:
+   a hairline that fills with scroll progress and one tick per section.
+   Names stay hidden until you reach for it, so it never shouts over
+   the page or collides with the column.                               */
+export function ScrollRail() {
+  const active = useActiveSection();
+  const { scrollYProgress } = useScroll();
+  const fill = useSpring(scrollYProgress, { stiffness: 120, damping: 30, mass: 0.4 });
+  const pct = useTransform(scrollYProgress, (v) => String(Math.round(v * 100)).padStart(2, "0"));
+  return (
+    <div className="group/rail fixed left-3 top-0 z-40 hidden h-screen w-10 flex-col justify-center xl:flex">
+      <div className="relative flex gap-3 pl-2">
+        {/* progress track */}
+        <div className="relative w-px shrink-0 bg-hairline">
+          <motion.div style={{ scaleY: fill }} className="absolute inset-x-0 top-0 h-full origin-top bg-primary/70" />
+        </div>
+        <ul className="flex flex-col gap-3.5 py-1">
+          {SECTIONS.map((s) => {
+            const on = active === s.id;
+            return (
+              <li key={s.id} className="relative flex items-center">
+                <a href={`#${s.id}`} aria-label={s.label} className="flex items-center py-1">
+                  <span className={`h-px transition-state ${on ? "w-4 bg-primary" : "w-2 bg-muted-foreground/40 group-hover/rail:bg-muted-foreground/70"}`} />
+                  {/* the name only surfaces when the rail is reached for */}
+                  <span className={`pointer-events-none absolute left-6 whitespace-nowrap rounded-[2px] bg-background/90 px-1.5 py-0.5 label-mono opacity-0 transition-state group-hover/rail:opacity-100 ${on ? "text-primary" : "text-muted-foreground"}`}>
+                    {s.label}
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+      <div className="mt-6 pl-2 label-mono text-muted-foreground/40">
+        <motion.span>{pct}</motion.span>%
+      </div>
+    </div>
+  );
+}
+
 /* ── StatusDot ───────────────────────────────────────────────── */
 export function StatusDot({ healthy = true }) {
   return (<span className="relative inline-flex h-1.5 w-1.5">
-    <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 ${healthy ? "bg-status-good" : "bg-destructive"}`} />
     <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${healthy ? "bg-status-good status-pulse" : "bg-destructive"}`} />
   </span>);
 }
+
+/* ── SectionLabel — a status-page "component" row ────────────── */
+export function SectionLabel({ slug, state = "operational" }) {
+  return (<div className="flex items-center gap-3">
+    <span className="inline-flex items-center gap-1.5 label-mono text-status-good">
+      <StatusDot />
+      {state}
+    </span>
+    <div className="h-px w-8 bg-hairline" />
+    <span className="label-mono text-muted-foreground">component / {slug}</span>
+  </div>);
+}
+
+/* ── Ext — the one glyph the site uses for "this leaves the page" ─ */
+export function Ext({ className = "" }) {
+  return <span aria-hidden className={`inline-block translate-y-px transition-state ${className}`}>↗</span>;
+}
+
 /* ── Ambient topology background (fixed, full viewport) ─────── */
 export function AmbientTopology() {
+  const { x, y } = usePointerParallax();
+  const tx = useTransform(x, [-1, 1], [26, -26]);
+  const ty = useTransform(y, [-1, 1], [18, -18]);
   const nodes = [
     { x: 60, y: 120 }, { x: 60, y: 300 }, { x: 60, y: 480 },
     { x: 260, y: 80 }, { x: 260, y: 220 }, { x: 260, y: 380 }, { x: 260, y: 520 },
@@ -56,12 +158,16 @@ export function AmbientTopology() {
     [7, 10], [7, 11], [8, 11], [8, 12], [9, 12], [9, 13],
     [10, 14], [11, 14], [12, 15], [13, 15],
   ];
-  const flowing = [1, 4, 6, 9, 12, 15, 18, 21];
   return (<div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" style={{ contain: "strict" }}>
-    <svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full text-primary opacity-[0.12]" style={{
-      maskImage: "radial-gradient(ellipse 80% 70% at 50% 40%, black 40%, transparent 90%)",
-      WebkitMaskImage: "radial-gradient(ellipse 80% 70% at 50% 40%, black 40%, transparent 90%)",
-    }}>
+    <motion.svg
+      viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice"
+      style={{
+        x: tx, y: ty,
+        maskImage: "radial-gradient(ellipse 80% 70% at 50% 40%, black 40%, transparent 90%)",
+        WebkitMaskImage: "radial-gradient(ellipse 80% 70% at 50% 40%, black 40%, transparent 90%)",
+      }}
+      className="absolute -inset-8 text-primary opacity-[0.12]"
+    >
       <defs>
         <radialGradient id="amb-node">
           <stop offset="0" stopColor="currentColor" stopOpacity="0.9" />
@@ -69,68 +175,35 @@ export function AmbientTopology() {
         </radialGradient>
       </defs>
       {edges.map(([a, b], i) => (<line key={i} x1={nodes[a].x} y1={nodes[a].y} x2={nodes[b].x} y2={nodes[b].y} stroke="currentColor" strokeOpacity="0.18" strokeWidth="0.6" />))}
-      {flowing.map((idx, i) => {
-        const [a] = edges[idx % edges.length];
-        return (<circle key={`pkt-${i}`} cx={nodes[a].x} cy={nodes[a].y} r="1.5" fill="currentColor" opacity={0.15 + (i % 4) * 0.08} />);
-      })}
       {nodes.map((n, i) => (<g key={i}>
         <circle cx={n.x} cy={n.y} r={(n.r ?? 2) + 4} fill="url(#amb-node)" opacity="0.3" />
         <circle cx={n.x} cy={n.y} r={n.r ?? 2} fill="currentColor" />
       </g>))}
-    </svg>
+    </motion.svg>
   </div>);
 }
-/* ── FlowField - static only, no animation ───────────────────── */
-export function FlowField({ className = "" }) {
-  return (<svg aria-hidden viewBox="0 0 800 400" preserveAspectRatio="none" className={`pointer-events-none absolute inset-0 -z-10 h-full w-full text-primary ${className}`}>
-    <defs>
-      <linearGradient id="ff-ln" x1="0" x2="1">
-        <stop offset="0" stopColor="currentColor" stopOpacity="0" />
-        <stop offset="0.5" stopColor="currentColor" stopOpacity="0.35" />
-        <stop offset="1" stopColor="currentColor" stopOpacity="0" />
-      </linearGradient>
-    </defs>
-    {[80, 160, 240, 320].map((y) => (<path key={y} d={`M0 ${y} C200 ${y - 28} 600 ${y + 28} 800 ${y}`} fill="none" stroke="url(#ff-ln)" strokeWidth="0.9" />))}
-  </svg>);
-}
+
 /* ── Section connector ───────────────────────────────────────── */
 export function SectionConnector() {
-  return (<div aria-hidden className="relative flex items-center justify-center py-6 pointer-events-none">
-    <div className="h-px w-full bg-hairline" />
-    <div className="absolute h-1.5 w-2.5 bg-background px-px">
-      <div className="h-full w-full bg-primary/50" />
-    </div>
+  return (<div aria-hidden className="pointer-events-none relative mx-auto flex max-w-6xl items-center justify-center px-6">
+    <div className="h-px w-full bg-gradient-to-r from-transparent via-hairline to-transparent" />
+    <span className="absolute h-1 w-1 rotate-45 bg-primary/60" />
   </div>);
 }
-/* ── PillarHoverFx ───────────────────────────────────────────── */
-export function PillarHoverFx() {
-  return (<svg aria-hidden viewBox="0 0 300 200" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full text-primary opacity-0 transition-opacity duration-500 group-hover:opacity-100">
-    <defs>
-      <linearGradient id="ph-ln" x1="0" x2="1">
-        <stop offset="0" stopColor="currentColor" stopOpacity="0" />
-        <stop offset="0.5" stopColor="currentColor" stopOpacity="0.45" />
-        <stop offset="1" stopColor="currentColor" stopOpacity="0" />
-      </linearGradient>
-    </defs>
-    <path id="ph-p" d="M20 170 C 90 140 180 60 280 30" fill="none" stroke="url(#ph-ln)" strokeWidth="1" />
-    <circle r="2" fill="currentColor">
-      <animateMotion dur="3.2s" repeatCount="indefinite"><mpath href="#ph-p" /></animateMotion>
-    </circle>
-    {[[40, 160], [120, 110], [220, 60]].map(([x, y], idx) => (<g key={idx}>
-      <circle cx={x} cy={y} r="2.5" fill="currentColor" opacity="0.85" />
-      <circle cx={x} cy={y} r="6" fill="none" stroke="currentColor" strokeOpacity="0.5">
-        <animate attributeName="r" values="2.5;10;2.5" dur="2.6s" begin={`${idx * 0.4}s`} repeatCount="indefinite" />
-        <animate attributeName="opacity" values="0.6;0;0.6" dur="2.6s" begin={`${idx * 0.4}s`} repeatCount="indefinite" />
-      </circle>
-    </g>))}
-  </svg>);
-}
-/* ── HeroBlueprint (hero midground) ─────────────────────────── */
+
+/* ── HeroBlueprint — hero midground, parallaxed in three depths ─ */
 export function HeroBlueprint() {
+  const { x, y } = usePointerParallax();
+  const farX = useTransform(x, [-1, 1], [14, -14]);
+  const farY = useTransform(y, [-1, 1], [10, -10]);
+  const midX = useTransform(x, [-1, 1], [26, -26]);
+  const midY = useTransform(y, [-1, 1], [18, -18]);
+  const nearX = useTransform(x, [-1, 1], [42, -42]);
+  const nearY = useTransform(y, [-1, 1], [28, -28]);
   const workers = [{ x: 280, y: 380 }, { x: 460, y: 420 }, { x: 640, y: 400 }, { x: 820, y: 430 }];
   const cp = { x: 550, y: 200 };
   const ingress = { x: 120, y: 300 };
-  return (<svg aria-hidden viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full text-primary opacity-[0.18]" style={{
+  return (<svg aria-hidden viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full text-primary opacity-[0.10]" style={{
     maskImage: "linear-gradient(180deg, black 10%, black 60%, transparent 95%)",
     WebkitMaskImage: "linear-gradient(180deg, black 10%, black 60%, transparent 95%)",
   }}>
@@ -141,90 +214,138 @@ export function HeroBlueprint() {
         <stop offset="1" stopColor="currentColor" stopOpacity="0" />
       </linearGradient>
     </defs>
-    <rect x="200" y="140" width="900" height="380" rx="28" fill="none" stroke="currentColor" strokeOpacity="0.18" strokeWidth="1" strokeDasharray="6 6" />
-    <text x="220" y="132" fill="currentColor" opacity="0.45" fontSize="11" fontFamily="ui-monospace, monospace" letterSpacing="2">CLUSTER · region-1</text>
-    <rect x="430" y="160" width="240" height="100" rx="14" fill="currentColor" fillOpacity="0.04" stroke="currentColor" strokeOpacity="0.25" strokeWidth="0.8" />
-    <text x="450" y="180" fill="currentColor" opacity="0.5" fontSize="10" fontFamily="ui-monospace, monospace" letterSpacing="1.5">control-plane</text>
-    <circle cx={cp.x} cy={cp.y} r="6" fill="currentColor" />
-    <circle cx={cp.x} cy={cp.y} r="14" fill="currentColor" opacity="0.12" />
-    <circle cx={ingress.x} cy={ingress.y} r="5" fill="currentColor" />
-    <text x={ingress.x - 30} y={ingress.y + 24} fill="currentColor" opacity="0.5" fontSize="9" fontFamily="ui-monospace, monospace">ingress</text>
-    <path id="hb-in" d={`M${ingress.x} ${ingress.y} C 300 260 380 220 ${cp.x} ${cp.y}`} fill="none" stroke="url(#hb-edge)" strokeWidth="1" />
-    {workers.map((w, i) => (<g key={i}>
-      <path id={`hb-w-${i}`} d={`M${cp.x} ${cp.y} C ${cp.x} 300 ${w.x} 320 ${w.x} ${w.y}`} fill="none" stroke="url(#hb-edge)" strokeWidth="0.9" />
-      <rect x={w.x - 26} y={w.y - 16} width="52" height="32" rx="6" fill="currentColor" fillOpacity="0.06" stroke="currentColor" strokeOpacity="0.35" strokeWidth="0.8" />
-      <text x={w.x} y={w.y + 4} textAnchor="middle" fill="currentColor" opacity="0.55" fontSize="9" fontFamily="ui-monospace, monospace">node-{i + 1}</text>
-      {[0, 1, 2].map((p) => (<circle key={p} cx={w.x - 12 + p * 12} cy={w.y + 24} r="2" fill="currentColor" opacity="0.7" />))}
-    </g>))}
-    <circle r="2.2" fill="currentColor">
-      <animateMotion dur="5s" repeatCount="indefinite"><mpath href="#hb-in" /></animateMotion>
-      <animate attributeName="opacity" values="0;1;0" dur="5s" repeatCount="indefinite" />
-    </circle>
-    {workers.map((_, i) => (<circle key={`p-${i}`} r="2" fill="currentColor">
-      <animateMotion dur={`${4 + i * 0.6}s`} begin={`${i * 0.8}s`} repeatCount="indefinite">
-        <mpath href={`#hb-w-${i}`} />
-      </animateMotion>
-      <animate attributeName="opacity" values="0;1;0" dur={`${4 + i * 0.6}s`} begin={`${i * 0.8}s`} repeatCount="indefinite" />
-    </circle>))}
-    <g transform="translate(960,470)" opacity="0.45">
-      {Array.from({ length: 24 }).map((_, i) => {
-        const h = 4 + ((i * 37) % 22);
-        return <rect key={i} x={i * 7} y={-h} width="3" height={h} fill="currentColor" opacity={0.35 + (i % 5) * 0.08} />;
-      })}
-      <text x="0" y="14" fill="currentColor" opacity="0.55" fontSize="8" fontFamily="ui-monospace, monospace" letterSpacing="1.5">p99 · req/s</text>
-    </g>
+
+    {/* far: the cluster boundary */}
+    <motion.g style={{ x: farX, y: farY }}>
+      <rect x="200" y="140" width="900" height="380" rx="28" fill="none" stroke="currentColor" strokeOpacity="0.18" strokeWidth="1" strokeDasharray="6 6" />
+      <g transform="translate(960,470)" opacity="0.45">
+        {Array.from({ length: 24 }).map((_, i) => {
+          const h = 4 + ((i * 37) % 22);
+          return <rect key={i} x={i * 7} y={-h} width="3" height={h} fill="currentColor" opacity={0.35 + (i % 5) * 0.08} />;
+        })}
+      </g>
+    </motion.g>
+
+    {/* mid: edges and the traffic running along them */}
+    <motion.g style={{ x: midX, y: midY }}>
+      <path id="hb-in" d={`M${ingress.x} ${ingress.y} C 300 260 380 220 ${cp.x} ${cp.y}`} fill="none" stroke="url(#hb-edge)" strokeWidth="1" />
+      {workers.map((w, i) => (
+        <path key={i} id={`hb-w-${i}`} d={`M${cp.x} ${cp.y} C ${cp.x} 300 ${w.x} 320 ${w.x} ${w.y}`} fill="none" stroke="url(#hb-edge)" strokeWidth="0.9" />
+      ))}
+      <circle r="2.2" fill="currentColor">
+        <animateMotion dur="5s" repeatCount="indefinite"><mpath href="#hb-in" /></animateMotion>
+        <animate attributeName="opacity" values="0;1;0" dur="5s" repeatCount="indefinite" />
+      </circle>
+      {workers.map((_, i) => (<circle key={`p-${i}`} r="2" fill="currentColor">
+        <animateMotion dur={`${4 + i * 0.6}s`} begin={`${i * 0.8}s`} repeatCount="indefinite">
+          <mpath href={`#hb-w-${i}`} />
+        </animateMotion>
+        <animate attributeName="opacity" values="0;1;0" dur={`${4 + i * 0.6}s`} begin={`${i * 0.8}s`} repeatCount="indefinite" />
+      </circle>))}
+    </motion.g>
+
+    {/* near: the boxes themselves */}
+    <motion.g style={{ x: nearX, y: nearY }}>
+      <rect x="430" y="160" width="240" height="100" rx="14" fill="currentColor" fillOpacity="0.04" stroke="currentColor" strokeOpacity="0.25" strokeWidth="0.8" />
+      <circle cx={cp.x} cy={cp.y} r="6" fill="currentColor" />
+      <circle cx={cp.x} cy={cp.y} r="14" fill="currentColor" opacity="0.12" />
+      <circle cx={ingress.x} cy={ingress.y} r="5" fill="currentColor" />
+      {workers.map((w, i) => (<g key={i}>
+        <rect x={w.x - 26} y={w.y - 16} width="52" height="32" rx="6" fill="currentColor" fillOpacity="0.06" stroke="currentColor" strokeOpacity="0.35" strokeWidth="0.8" />
+        {[0, 1, 2].map((p) => (<circle key={p} cx={w.x - 12 + p * 12} cy={w.y + 24} r="2" fill="currentColor" opacity="0.7" />))}
+      </g>))}
+    </motion.g>
   </svg>);
 }
-/* ── BootSequence — amber-phosphor journalctl boot log ───────── */
-const BOOT_LINES = [
-  { t: "0.000000", msg: "darshan-atkari kernel: booting portfolio.img" },
-  { t: "0.041823", msg: "systemd[1]: starting cloud-init@career.service" },
-  { t: "0.183921", msg: "NetworkManager[512]: link up: eth-experience" },
-  { t: "0.402117", msg: "kubelet[1022]: node darshan-atkari joined cluster" },
-  { t: "0.618554", msg: "argocd-server: synced desired state → production" },
-  { t: "0.891230", msg: "observability: metrics + logs + traces attached" },
-  { t: "1.144902", msg: "compliance-agent: 3 certifications verified" },
-  { t: "1.402318", msg: "darshan-atkari.service: reached target production-ready", ok: true },
-];
-export function BootSequence({ onDone }) {
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    if (i >= BOOT_LINES.length - 1) return;
-    const delay = 140 + ((i * 53) % 130);
-    const t = setTimeout(() => setI((p) => p + 1), delay);
-    return () => clearTimeout(t);
-  }, [i]);
-  useEffect(() => {
-    if (i === BOOT_LINES.length - 1) {
-      const t = setTimeout(onDone, 420);
-      return () => clearTimeout(t);
-    }
-  }, [i, onDone]);
-  return (<motion.div initial={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.12, ease: "easeIn" } }} className="fixed inset-0 z-[100] overflow-hidden bg-background">
-    {/* scanlines + vignette, CRT feel */}
-    <div aria-hidden className="pointer-events-none absolute inset-0 opacity-[0.5]" style={{
-      backgroundImage: "repeating-linear-gradient(to bottom, rgba(255,184,77,0.05) 0px, rgba(255,184,77,0.05) 1px, transparent 1px, transparent 3px)",
-    }} />
-    <div aria-hidden className="pointer-events-none absolute inset-0" style={{
-      background: "radial-gradient(ellipse 70% 60% at 50% 45%, transparent 55%, rgba(0,0,0,0.55) 100%)",
-    }} />
-    <div className="relative flex h-full w-full items-center justify-center px-6">
-      <div className="w-full max-w-lg">
-        <div className="mb-4 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.24em] text-primary/50">
-          <span className="h-1.5 w-1.5 rounded-full bg-primary/70" />
-          console · ttyAMA0
-        </div>
-        <ul className="space-y-1.5">
-          {BOOT_LINES.slice(0, i + 1).map((l) => (<li key={l.t} className="font-mono text-[12px] leading-relaxed sm:text-[13px]">
-            <span className="text-primary/40">[{l.t}]</span>{" "}
-            <span className={l.ok ? "text-status-good" : "phosphor"}>{l.msg}</span>
-          </li>))}
-        </ul>
-        <div className="mt-2 flex items-center gap-1 font-mono text-[13px]">
-          <span className="text-primary/40">❯</span>
-          <span className="inline-block h-4 w-2 animate-pulse bg-primary/70" />
-        </div>
+
+/* ═══════════════════════════════════════════════════════════════
+   Motion kit — the React half of the utilities in styles.css.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── useSpotlight ─────────────────────────────────────────────
+   Feeds pointer position into the `spotlight` utility as CSS custom
+   properties. Writing straight to style skips a React render per
+   mousemove, which matters when six cards are listening at once. */
+export function useSpotlight() {
+  return {
+    onMouseMove: (e) => {
+      const r = e.currentTarget.getBoundingClientRect();
+      e.currentTarget.style.setProperty("--mx", `${e.clientX - r.left}px`);
+      e.currentTarget.style.setProperty("--my", `${e.clientY - r.top}px`);
+    },
+  };
+}
+
+/* ── Marquee ──────────────────────────────────────────────────
+   The track is rendered twice and shifted by exactly half its width,
+   so the loop is seamless. Pauses on hover and freezes entirely when
+   the visitor has asked for reduced motion.                        */
+export function Marquee({ children, duration = 42, reverse = false, className = "" }) {
+  const reduce = useReducedMotion();
+  return (
+    <div className={`marquee-host marquee-mask relative overflow-hidden ${className}`}>
+      <div
+        className={reduce ? "flex w-max" : "marquee-track"}
+        data-reverse={reverse ? "true" : undefined}
+        style={{ "--marquee-duration": `${duration}s` }}
+      >
+        <div className="flex shrink-0 items-center">{children}</div>
+        <div aria-hidden className="flex shrink-0 items-center">{children}</div>
       </div>
     </div>
-  </motion.div>);
+  );
+}
+
+/* ── WordReveal ───────────────────────────────────────────────
+   Each word rises out of its own clipped line. Not a blanket
+   fade-up: there is no opacity ramp and no vertical drift on the
+   block itself, so it reads as type being set, not as a card
+   floating in.                                                   */
+export function WordReveal({ text, className = "", delay = 0, stagger = 0.045 }) {
+  const reduce = useReducedMotion();
+  if (reduce) return <span className={className}>{text}</span>;
+  return (
+    <span className={className}>
+      {text.split(" ").map((word, i) => (
+        <span key={`${word}-${i}`} className="inline-block overflow-hidden align-bottom">
+          <motion.span
+            className="inline-block"
+            initial={{ y: "110%" }}
+            whileInView={{ y: "0%" }}
+            viewport={{ once: true, margin: "-12% 0px -12% 0px" }}
+            transition={{ duration: 0.75, delay: delay + i * stagger, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {word}
+            {i < text.split(" ").length - 1 ? " " : ""}
+          </motion.span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/* ── Magnetic ─────────────────────────────────────────────────
+   The element leans toward the cursor while it is nearby. Used on
+   one control only - the primary call to action.                 */
+export function Magnetic({ children, strength = 0.35, className = "" }) {
+  const reduce = useReducedMotion();
+  const mx = useMotionValue(0);
+  const my = useMotionValue(0);
+  const x = useSpring(mx, { stiffness: 220, damping: 18, mass: 0.4 });
+  const y = useSpring(my, { stiffness: 220, damping: 18, mass: 0.4 });
+  if (reduce) return <span className={className}>{children}</span>;
+  return (
+    <motion.span
+      style={{ x, y }}
+      className={`inline-block ${className}`}
+      onMouseMove={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        mx.set((e.clientX - (r.left + r.width / 2)) * strength);
+        my.set((e.clientY - (r.top + r.height / 2)) * strength);
+      }}
+      onMouseLeave={() => { mx.set(0); my.set(0); }}
+    >
+      {children}
+    </motion.span>
+  );
 }

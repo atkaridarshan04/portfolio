@@ -1,8 +1,8 @@
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, Github, Linkedin, FileText, ArrowRight, Terminal as TerminalIcon, Sun, Moon, } from "lucide-react";
 import profileImg from "@/assets/profile.jpg";
-import { fade, stagger, StatusDot, HeroBlueprint } from "./primitives";
+import { Ext, Magnetic, Marquee, Reveal, SECTIONS, StatusDot, useActiveSection } from "./primitives";
+
 /* ── Typewriter role cycling ─────────────────────────────────── */
 function RoleCycler() {
   const roles = ["Cloud Engineer", "DevOps Engineer", "SRE", "MLOps Engineer"];
@@ -31,210 +31,225 @@ function RoleCycler() {
   }, [displayed, deleting, roleIdx]);
   return (<span className="font-mono text-sm text-primary">
     {displayed}
-    <span className="ml-0.5 inline-block h-4 w-px bg-primary align-middle animate-pulse" />
+    <span className="ml-0.5 inline-block h-4 w-px bg-primary align-middle caret-blink" />
   </span>);
 }
-/* ── Metrics panel (replaces stats strip) ────────────────────── */
-function StatsStrip() {
-  const stats = [
-    { label: "Projects shipped", value: "5+" },
-    { label: "Certifications", value: "3" },
-    { label: "Tools in stack", value: "30+" },
-    { label: "Incidents open", value: "0" },
-  ];
-  return (<motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.7, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden rounded-md hairline bg-surface/60">
-    <div className="flex items-center gap-1.5 border-b border-hairline px-3 py-2">
-      <span className="h-1.5 w-1.5 rounded-full bg-destructive/50" />
-      <span className="h-1.5 w-1.5 rounded-full bg-primary/50" />
-      <span className="h-1.5 w-1.5 rounded-full bg-status-good/50" />
-      <span className="ml-2 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">panel · summary</span>
-    </div>
-    <div className="grid grid-cols-2 [&>div:nth-child(odd)]:border-r [&>div:nth-child(3)]:border-t [&>div:nth-child(4)]:border-t border-hairline">
-      {stats.map((s) => (<div key={s.label} className="flex flex-col gap-0.5 px-3 py-2.5">
-        <span className="font-display text-lg font-semibold text-foreground">{s.value}</span>
-        <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">{s.label}</span>
-      </div>))}
-    </div>
-  </motion.div>);
+
+/* ── Session uptime — the one number on the page that is measured ─
+   Not a vanity stat: it is the real time this tab has been open,
+   ticking, which is what a status page would actually show.        */
+function SessionUptime() {
+  const started = useRef(Date.now());
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setElapsed(Math.floor((Date.now() - started.current) / 1000)), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
+  const ss = String(elapsed % 60).padStart(2, "0");
+  return <span className="tabular-nums">{mm}:{ss}</span>;
 }
-/* ── Floating labels around portrait ─────────────────────────── */
-// Removed - kept code-paths clean
-/* ── Nav — a status-bar header, not a floating pill ──────────── */
-export function Nav({ theme, onToggleTheme }) {
-  const links = [
-    { label: "Domains", href: "#domains" },
-    { label: "Postmortems", href: "#projects" },
-    { label: "Metrics", href: "#stack" },
-    { label: "Compliance", href: "#certs" },
-    { label: "Activity", href: "#github" },
-    { label: "Escalate", href: "#contact" },
-  ];
+
+/* ── Nav — a status bar, flat and opaque. No glass, no pill ───── */
+export function Nav() {
   const [scrolled, setScrolled] = useState(false);
-  const [active, setActive] = useState("top");
+  const active = useActiveSection();
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-  useEffect(() => {
-    const ids = ["top", "domains", "projects", "stack", "certs", "github", "contact"];
-    const els = ids.map((id) => document.getElementById(id)).filter((e) => !!e);
-    const io = new IntersectionObserver((entries) => {
-      const visible = entries.filter((e) => e.isIntersecting)
-        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-      if (visible?.target.id)
-        setActive(visible.target.id);
-    }, { rootMargin: "-40% 0px -55% 0px", threshold: [0, 0.25, 0.6, 1] });
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, []);
-  return (<motion.header initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, ease: "easeOut" }} className="fixed inset-x-0 top-0 z-50">
-    <div className={`flex items-center justify-between gap-4 border-b px-5 py-3 transition-colors duration-300 sm:px-8 ${scrolled ? "border-hairline bg-background/92 backdrop-blur-md" : "border-transparent bg-transparent"}`}>
-      <a href="#top" className="flex items-center gap-2.5">
-        <span className="grid h-6 w-6 place-items-center rounded-[3px] bg-primary text-primary-foreground font-display text-[11px] font-bold">DA</span>
-        <span className="hidden font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground sm:inline">darshan-atkari</span>
-        <span className="hidden items-center gap-1 rounded-sm bg-status-good/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.15em] text-status-good ring-1 ring-status-good/25 md:inline-flex">
+  return (<header className="fixed inset-x-0 top-0 z-50">
+    <div className={`flex items-center justify-between gap-4 border-b px-5 py-3 transition-state sm:px-8 ${scrolled ? "border-hairline bg-background/95" : "border-transparent bg-transparent"}`}>
+      <a href="#top" className="group flex shrink-0 items-center gap-2.5">
+        <span className="grid h-6 w-6 place-items-center rounded-[3px] bg-primary font-display text-[13px] font-medium leading-none text-primary-foreground">DA</span>
+        <span className="hidden label-mono text-muted-foreground transition-state group-hover:text-foreground sm:inline">darshan-atkari</span>
+        <span className="hidden items-center gap-1.5 label-mono text-status-good md:inline-flex">
           <StatusDot /> operational
         </span>
       </a>
-      <nav className="hidden items-center gap-5 md:flex">
-        {links.map((l) => {
-          const id = l.href.slice(1);
-          const isActive = active === id;
-          return (<a key={l.href} href={l.href} className={`relative py-1 font-mono text-[11px] uppercase tracking-[0.16em] transition ${isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-            {l.label}
-            {isActive && (<motion.span layoutId="nav-active" className="absolute inset-x-0 -bottom-0.5 h-px bg-primary" transition={{ type: "spring", stiffness: 320, damping: 30 }} />)}
-          </a>);
-        })}
+
+      {/* wayfinding below the rail's breakpoint */}
+      <nav className="ml-4 flex min-w-0 flex-1 items-center justify-start gap-5 overflow-x-auto lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {SECTIONS.slice(1).map((s) => (
+          <a key={s.id} href={`#${s.id}`} className="relative py-1">
+            <span className={`label-mono whitespace-nowrap transition-state ${active === s.id ? "text-primary" : "text-muted-foreground/70 hover:text-foreground"}`}>
+              {s.label}
+            </span>
+            {active === s.id && (
+              <motion.span layoutId="nav-underline" className="absolute -bottom-0.5 inset-x-0 h-px bg-primary"
+                transition={{ type: "spring", stiffness: 420, damping: 36 }} />
+            )}
+          </a>
+        ))}
       </nav>
-      <div className="flex items-center gap-2">
-        <button onClick={onToggleTheme} aria-label="Toggle theme" className="grid h-7 w-7 place-items-center rounded-[3px] hairline bg-surface/60 text-muted-foreground transition hover:bg-surface-elevated hover:text-foreground">
-          {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-        </button>
-        <a href="#contact" className="group inline-flex items-center gap-1.5 rounded-[3px] bg-primary px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.14em] font-medium text-primary-foreground transition hover:brightness-110">
-          Get in touch
-          <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+
+      <div className="flex shrink-0 items-center gap-4">
+        <span className="hidden label-mono text-muted-foreground/60 lg:inline">
+          session <SessionUptime />
+        </span>
+        <a href="#contact" className="group inline-flex items-center gap-1.5 rounded-[3px] bg-primary px-3.5 py-1.5 label-mono font-medium text-primary-foreground transition-state hover:brightness-110">
+          Get in touch <Ext className="group-hover:-translate-y-px" />
         </a>
       </div>
     </div>
-  </motion.header>);
+  </header>);
 }
-/* ── Hero ────────────────────────────────────────────────────── */
+
+/* ── Hero ─────────────────────────────────────────────────────
+   The portrait used to be a framed card parked in the right column,
+   which left a column of dead black between it and the type and made
+   the whole first screen read as two unrelated boxes. It is a bleed
+   now: full height, hard against the right edge of the viewport, and
+   dissolved leftward into the background so the type sits on top of
+   it rather than beside it. One picture, one block of type, no gap
+   in the middle for the eye to fall into.                          */
 export function Hero() {
   const ref = useRef(null);
+  const reduce = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], [0, 110]);
-  const opacity = useTransform(scrollYProgress, [0, 1], [1, 0.3]);
-  return (<section id="top" ref={ref} className="relative isolate overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-24 grain">
-    <motion.div style={{ y, opacity }} aria-hidden className="absolute inset-0 -z-10">
-      <div className="absolute inset-0 grid-pattern opacity-60" />
-      <div className="absolute left-1/2 top-0 h-[640px] w-[1200px] -translate-x-1/2 amber-glow" />
-      <HeroBlueprint />
-      <div className="absolute left-1/2 top-40 h-[1px] w-[80%] -translate-x-1/2 bg-gradient-to-r from-transparent via-primary/35 to-transparent" />
-      <div className="absolute -left-40 top-40 h-[28rem] w-[28rem] rounded-full bg-primary/12 blur-[140px]" />
-      <div className="absolute -right-32 top-72 h-[26rem] w-[26rem] rounded-full bg-accent/8 blur-[160px]" />
+  const bgY = useTransform(scrollYProgress, [0, 1], [0, 90]);
+  const portraitY = useTransform(scrollYProgress, [0, 1], reduce ? [0, 0] : [0, -60]);
+  const fade = useTransform(scrollYProgress, [0, 0.9], [1, 0.25]);
+
+  return (<section id="top" ref={ref} className="relative isolate overflow-hidden grain">
+    {/* atmosphere */}
+    <motion.div style={{ y: bgY, opacity: fade }} aria-hidden className="absolute inset-0 -z-10">
+      <div className="absolute inset-0 dot-matrix opacity-40" style={{
+        maskImage: "radial-gradient(ellipse 70% 60% at 35% 40%, black 10%, transparent 75%)",
+        WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 35% 40%, black 10%, transparent 75%)",
+      }} />
+      <div className="absolute -left-32 top-32 h-[32rem] w-[32rem] rounded-full bg-primary/12 blur-[150px]" />
+      <div className="absolute left-1/3 -top-24 h-[26rem] w-[40rem] rounded-full bg-accent/6 blur-[170px]" />
     </motion.div>
 
-    <div className="mx-auto max-w-6xl px-6">
-      <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[1.35fr_1fr] lg:gap-16">
+    <div className="relative flex flex-col lg:block lg:min-h-screen">
+      {/* ── the portrait, bleeding off the right edge ───────────── */}
+      <motion.div
+        style={{ y: portraitY }}
+        className="relative order-2 h-[56vh] w-full lg:absolute lg:inset-y-0 lg:right-0 lg:order-none lg:h-full lg:w-[44%] xl:w-[42%]"
+      >
+        <img
+          src={profileImg}
+          alt="Portrait of Darshan Atkari"
+          width={535} height={1024}
+          className="duotone h-full w-full object-cover object-[center_18%] lg:object-[center_22%]"
+        />
+        {/* dissolve: downward on a phone, leftward on a wide screen */}
+        <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-background/10 lg:hidden" />
+        <div aria-hidden className="absolute inset-0 hidden lg:block" style={{
+          background: "linear-gradient(90deg, #0b0e11 0%, rgba(11,14,17,0.92) 22%, rgba(11,14,17,0.45) 48%, rgba(11,14,17,0.12) 78%, rgba(11,14,17,0) 100%)",
+        }} />
+        <div aria-hidden className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-background to-transparent" />
+        <div aria-hidden className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-background to-transparent lg:h-56" />
+        {/* holds the pale studio backdrop down so the face is the brightest thing */}
+        <div aria-hidden className="absolute inset-0" style={{
+          background: "radial-gradient(ellipse 58% 48% at 62% 40%, transparent 28%, rgba(11,14,17,0.38) 68%, rgba(11,14,17,0.85) 100%)",
+        }} />
+      </motion.div>
 
-        {/* LEFT */}
-        <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-col items-start gap-6">
-
-          {/* status line */}
-          <motion.div variants={fade} className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground sm:text-xs sm:tracking-[0.16em]">
+      {/* ── the type ─────────────────────────────────────────────── */}
+      <div className="relative order-1 mx-auto flex w-full max-w-6xl flex-col justify-center px-6 pb-10 pt-32 lg:min-h-screen lg:pb-28 lg:pt-28">
+        <div className="max-w-[38rem]">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 label-mono text-muted-foreground">
             <span className="inline-flex items-center gap-2 whitespace-nowrap">
               <StatusDot />
               currently deployed as
             </span>
             <RoleCycler />
-          </motion.div>
-
-          {/* name */}
-          <motion.h1 variants={fade} className="font-display text-balance text-[clamp(2.8rem,7vw,5.5rem)] font-bold leading-[0.95] tracking-tight">
-            Darshan Atkari
-          </motion.h1>
-
-          {/* kicker */}
-          <motion.p variants={fade} className="max-w-xl font-mono text-sm leading-snug text-primary sm:text-base">
-            automating the present <span className="text-muted-foreground">·</span> scaling the future
-          </motion.p>
-
-          <motion.p variants={fade} className="max-w-xl text-balance text-base leading-relaxed text-muted-foreground sm:text-lg">
-            I build the unseen layer beneath modern software - cloud-native infrastructure,
-            Kubernetes workloads, DevSecOps pipelines, and MLOps systems - engineered for
-            reliability, observability, and automation at scale.
-          </motion.p>
-
-          {/* CTAs */}
-          <motion.div variants={fade} className="flex flex-wrap items-center gap-3 pt-1">
-            <a href="#projects" className="group inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[0_10px_40px_-10px_rgba(245,166,35,0.5)] transition hover:brightness-110">
-              View Postmortems
-              <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-            </a>
-            <a href="https://github.com/atkaridarshan04" target="_blank" rel="noreferrer" className="group inline-flex items-center gap-2 rounded-md hairline bg-surface px-5 py-3 text-sm font-medium text-foreground transition hover:bg-surface-elevated">
-              <Github className="h-4 w-4" /> GitHub
-            </a>
-            <a href="https://www.linkedin.com/in/darshan-atkari/" target="_blank" rel="noreferrer" className="group inline-flex items-center gap-2 rounded-md hairline bg-surface px-5 py-3 text-sm font-medium text-foreground transition hover:bg-surface-elevated">
-              <Linkedin className="h-4 w-4" /> LinkedIn
-            </a>
-            <a href="https://drive.google.com/file/d/1j7TD_B6cMMWz6VkXwYCfYubT49IjnLzy/view" target="_blank" className="group inline-flex items-center gap-2 rounded-md bg-transparent px-5 py-3 text-sm font-medium text-muted-foreground transition hover:text-foreground">
-              <FileText className="h-4 w-4" /> Resume
-              <ArrowUpRight className="h-3.5 w-3.5 opacity-60 transition group-hover:opacity-100" />
-            </a>
-          </motion.div>
-        </motion.div>
-
-        {/* RIGHT */}
-        <motion.div initial={{ opacity: 0, y: 24, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.15 }} className="relative mx-auto w-full max-w-xs lg:mx-0 lg:mt-2 flex flex-col gap-4">
-          <div aria-hidden className="absolute -inset-6 -z-10 rounded-lg bg-primary/12 blur-3xl" />
-
-          {/* portrait, framed as a monitored panel */}
-          <div className="relative overflow-hidden rounded-lg hairline bg-surface shadow-[0_30px_80px_-30px_rgba(0,0,0,0.65)]">
-            <div className="flex items-center justify-between border-b border-hairline px-3 py-2">
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">profile.jpg</span>
-              <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-status-good">
-                <StatusDot /> verified
-              </span>
-            </div>
-            <div className="relative aspect-square overflow-hidden bg-surface">
-              <img src={profileImg} alt="Portrait of Darshan Atkari" width={640} height={800} className="h-full w-full object-cover" />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/55 via-transparent to-transparent" />
-            </div>
-            <div className="border-t border-hairline px-3 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
-              status · accepting new engagements
-            </div>
           </div>
 
-          {/* stats strip */}
-          <StatsStrip />
-        </motion.div>
+          <h1 className="mt-7 font-display display-hero">
+            <Reveal as="span" trigger="mount" className="block">Darshan</Reveal>
+            <Reveal as="span" trigger="mount" delay={0.1} className="block text-primary">Atkari</Reveal>
+          </h1>
+
+          <p className="mt-6 font-mono text-sm tracking-tight">
+            <span className="text-shine">automating the present</span>
+            <span className="px-2 text-muted-foreground/50">·</span>
+            <span className="text-shine">scaling the future</span>
+          </p>
+
+          <p className="mt-6 w-full border-l border-hairline pl-5 text-[15px] leading-relaxed text-muted-foreground sm:text-base">
+            I build the unseen layer beneath modern software — cloud-native infrastructure,
+            Kubernetes workloads, DevSecOps pipelines, and MLOps systems — engineered for
+            reliability, observability, and automation at scale.
+          </p>
+
+          <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
+            <Magnetic>
+              <a href="#projects" className="group inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-state hover:brightness-110">
+                View postmortems
+                <span aria-hidden className="transition-state group-hover:translate-x-0.5">→</span>
+              </a>
+            </Magnetic>
+            {[
+              { label: "GitHub", href: "https://github.com/atkaridarshan04" },
+              { label: "LinkedIn", href: "https://www.linkedin.com/in/darshan-atkari/" },
+              { label: "Résumé", href: "https://drive.google.com/file/d/1j7TD_B6cMMWz6VkXwYCfYubT49IjnLzy/view" },
+            ].map((l) => (
+              <a key={l.label} href={l.href} target="_blank" rel="noreferrer"
+                className="group relative inline-flex items-center gap-1.5 pb-1 font-mono text-sm text-muted-foreground transition-state hover:text-foreground">
+                {l.label} <Ext className="opacity-50 group-hover:opacity-100" />
+                <span aria-hidden className="absolute inset-x-0 bottom-0 h-px bg-hairline" />
+                <span aria-hidden className="absolute inset-x-0 bottom-0 h-px origin-left scale-x-0 bg-primary transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-x-100" />
+              </a>
+            ))}
+          </div>
+        </div>
+
+        {/* what is true today — a readout rail, not a second card */}
+        <dl className="mt-14 grid max-w-3xl grid-cols-2 gap-px border-t border-hairline bg-hairline sm:grid-cols-4">
+          {[
+            ["role", "cloud · devops · sre"],
+            ["focus", "kubernetes platforms"],
+            ["delivery", "gitops · argo · terraform"],
+            ["intake", "open to new work"],
+          ].map(([k, v]) => (
+            <div key={k} className="group relative bg-background px-4 py-4 transition-state hover:bg-surface/70">
+              <span aria-hidden className="absolute inset-x-0 top-0 h-px origin-left scale-x-0 bg-primary transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-x-100" />
+              <dt className="label-mono text-muted-foreground/60">{k}</dt>
+              <dd className="mt-2 font-mono text-[12px] leading-snug text-foreground/85 transition-state group-hover:text-primary">{v}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
     </div>
 
+    {/* the stack, running past */}
+    <div className="relative border-y border-hairline bg-surface/30 py-3.5">
+      <Marquee duration={54}>
+        {["Kubernetes", "Terraform", "ArgoCD", "AWS", "Docker", "Helm", "Prometheus", "Grafana", "GitHub Actions", "Istio", "Trivy", "MLflow", "KServe", "Argo Workflows", "Kyverno", "OpenTelemetry", "Vault", "Ansible"].map((t) => (
+          <span key={t} className="flex items-center gap-7 px-3.5 font-mono text-[13px] text-muted-foreground/70">
+            {t}
+            <span aria-hidden className="h-1 w-1 rotate-45 bg-primary/40" />
+          </span>
+        ))}
+      </Marquee>
+    </div>
+
     {/* terminal interlude */}
-    <div className="mx-auto mt-20 max-w-6xl px-6">
-      <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }} className="grid grid-cols-1 gap-8 md:grid-cols-12 md:items-center">
+    <div className="mx-auto max-w-6xl px-6 py-20 sm:py-24">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-12 md:items-center">
         <div className="md:col-span-5">
-          <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-            <TerminalIcon className="h-3.5 w-3.5 text-primary" /> live shell
-          </div>
-          <h3 className="mt-3 font-display text-balance text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
+          <div className="label-mono text-muted-foreground">live shell</div>
+          <h2 className="mt-4 font-display display-sub text-balance">
             The interface I think in.
-          </h3>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Most of my craft happens in plain text, declarations, manifests, pipelines.
+          </h2>
+          <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
+            Most of my craft happens in plain text — declarations, manifests, pipelines.
             Each command is a contract with production.
           </p>
         </div>
         <div className="md:col-span-7">
           <CommandTerminal />
         </div>
-      </motion.div>
+      </div>
     </div>
   </section>);
 }
+
 /* ── CommandTerminal ─────────────────────────────────────────── */
 function CommandTerminal() {
   const lines = [
@@ -264,25 +279,21 @@ function CommandTerminal() {
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx]);
-  return (<div className="relative overflow-hidden rounded-lg hairline bg-[#07090b] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)]">
+  return (<div className="relative overflow-hidden rounded-xl hairline bg-[#07090b] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)]">
     <div className="flex items-center gap-2 border-b border-white/8 px-4 py-2.5">
-      <span className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
-      <span className="h-2.5 w-2.5 rounded-full bg-primary/70" />
-      <span className="h-2.5 w-2.5 rounded-full bg-accent/70" />
-      <span className="ml-3 font-mono text-[11px] uppercase tracking-[0.22em] text-white/35">
-        ~/backstage · zsh
-      </span>
+      <span className="h-1.5 w-1.5 rounded-full bg-white/20" />
+      <span className="ml-1 label-mono text-white/35">~/backstage · zsh</span>
     </div>
-    <div className="space-y-2 p-5 font-mono text-[13px] leading-relaxed sm:text-sm">
+    <div className="min-h-[13.5rem] space-y-2 p-5 font-mono text-[13px] leading-relaxed sm:text-sm">
       {lines.slice(0, idx).map((l, i) => (<div key={i} className="opacity-40">
         <div><span className="text-primary">❯</span> <span className="text-white/70">{l.cmd}</span></div>
         <div className="pl-3 text-white/40">{l.out}</div>
       </div>))}
       <div>
         <span className="text-primary">❯</span>{" "}<span className="text-white/85">{typed}</span>
-        <span className="ml-0.5 inline-block h-4 w-1.5 -mb-0.5 animate-pulse bg-primary" />
+        <span className="ml-0.5 inline-block h-4 w-1.5 -mb-0.5 bg-primary caret-blink" />
       </div>
-      {showOut && (<motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="pl-3 text-white/50">{lines[idx].out}</motion.div>)}
+      {showOut && (<div className="pl-3 text-white/50">{lines[idx].out}</div>)}
     </div>
   </div>);
 }

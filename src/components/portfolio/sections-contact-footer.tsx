@@ -1,88 +1,99 @@
-import { Mail, Github, Linkedin } from "lucide-react";
-import { SectionLabel } from "./primitives";
-/* ── Contact ─────────────────────────────────────────────────── */
+import { useEffect, useState } from "react";
+import { Ext, Magnetic, Reveal, SectionLabel, StatusDot, WordReveal, useSpotlight } from "./primitives";
+
+const EMAIL = "atkaridarshan04@gmail.com";
+
+/* ── Contact ──────────────────────────────────────────────────
+   The address is the headline, and it can be taken in one click. */
 export function Contact() {
-    return (<section id="contact" className="section-pad relative overflow-hidden">
-      {/* distinct background: center-radial warm glow */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-1/2 h-[700px] w-[1100px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/8 blur-[180px]"/>
-      </div>
+  const spot = useSpotlight();
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return;
+    const t = setTimeout(() => setCopied(false), 1800);
+    return () => clearTimeout(t);
+  }, [copied]);
 
-      <div className="mx-auto max-w-5xl px-6">
-        <div className="flex flex-col gap-10 md:flex-row md:items-center md:justify-between">
-          {/* left: heading + description */}
-          <div className="max-w-xl">
-            <SectionLabel slug="escalation" title="Contact"/>
-            <h2 className="mt-6 font-display text-balance text-5xl font-bold leading-[0.98] tracking-tight sm:text-6xl">
-              Let&apos;s build something
-              <br />
-              <span className="text-primary">production-grade.</span>
-            </h2>
-            <p className="mt-5 max-w-md text-base text-muted-foreground">
-              Interested in cloud, DevOps, SRE, or MLOps collaboration? The fastest way to reach me is email.
-            </p>
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(EMAIL);
+      setCopied(true);
+    } catch {
+      window.location.href = `mailto:${EMAIL}`;
+    }
+  }
+
+  return (<section id="contact" className="section-pad relative overflow-hidden">
+    <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+      <div className="absolute left-1/2 top-1/2 h-[700px] w-[1100px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/8 blur-[180px]" />
+    </div>
+
+    <div className="mx-auto max-w-6xl px-6">
+      <div className="grid grid-cols-1 gap-12 md:grid-cols-12 md:items-end">
+        <div className="md:col-span-7">
+          <SectionLabel slug="escalation" state="on call" />
+          <Reveal as="h2" className="mt-7 font-display display-section text-balance">
+            Let&apos;s build something<br />
+            <span className="text-primary">production-grade.</span>
+          </Reveal>
+          <p className="mt-6 max-w-md text-[15px] leading-relaxed text-muted-foreground">
+            <WordReveal text="Interested in cloud, DevOps, SRE or MLOps collaboration? Email is the fastest path — it reaches me directly, no triage queue." />
+          </p>
+
+          <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <a href={`mailto:${EMAIL}`}
+              className="group font-mono text-[clamp(1rem,2.6vw,1.6rem)] text-foreground underline decoration-hairline decoration-1 underline-offset-[6px] transition-state hover:decoration-primary hover:text-primary">
+              {EMAIL}
+            </a>
+            <Magnetic strength={0.28}>
+              <button onClick={copy}
+                className="rounded-[3px] border border-hairline px-2.5 py-1.5 label-mono text-muted-foreground transition-state hover:border-primary/40 hover:bg-primary/10 hover:text-primary">
+                {copied ? <span className="text-status-good">copied ✓</span> : "copy address"}
+              </button>
+            </Magnetic>
           </div>
+        </div>
 
-          {/* right: escalation tiers */}
-          <div className="w-full max-w-xs shrink-0 overflow-hidden rounded-md hairline bg-surface/60">
-            <div className="flex items-center gap-1.5 border-b border-hairline px-3 py-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-status-good status-pulse" />
-              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">on-call · new opportunities</span>
-            </div>
-            <div className="flex flex-col divide-y divide-hairline">
-              <a href="mailto:atkaridarshan04@gmail.com" className="group flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-primary/10">
-                <span className="flex items-center gap-2.5 text-sm font-medium text-foreground">
-                  <Mail className="h-4 w-4 text-primary"/> Email
+        {/* escalation tiers */}
+        <div {...spot} className="spotlight w-full overflow-hidden rounded-xl panel bg-surface/60 md:col-span-5">
+          <div className="flex items-center gap-2 border-b border-hairline px-4 py-2.5">
+            <StatusDot />
+            <span className="label-mono text-muted-foreground">on-call · new opportunities</span>
+          </div>
+          <div className="flex flex-col divide-y divide-hairline">
+            {[
+              { label: "Email", tier: "primary", href: `mailto:${EMAIL}`, ext: false },
+              { label: "LinkedIn", tier: "secondary", href: "https://linkedin.com/in/darshan-atkari", ext: true },
+              { label: "GitHub", tier: "tertiary", href: "https://github.com/atkaridarshan04", ext: true },
+            ].map((c) => (
+              <a key={c.label} href={c.href} {...(c.ext ? { target: "_blank", rel: "noreferrer" } : {})}
+                className="group flex items-center justify-between gap-3 px-4 py-3.5 transition-state hover:bg-primary/10">
+                <span className="inline-flex items-baseline gap-1.5 text-sm text-foreground/90">
+                  {c.label} {c.ext && <Ext className="opacity-0 group-hover:opacity-60" />}
                 </span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-primary">primary</span>
+                <span className={`label-mono ${c.tier === "primary" ? "text-primary" : "text-muted-foreground"}`}>{c.tier}</span>
               </a>
-              <a href="https://linkedin.com/in/darshan-atkari" target="_blank" rel="noreferrer" className="group flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-surface-elevated">
-                <span className="flex items-center gap-2.5 text-sm text-foreground/85">
-                  <Linkedin className="h-4 w-4 text-muted-foreground"/> LinkedIn
-                </span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">secondary</span>
-              </a>
-              <a href="https://github.com/atkaridarshan04" target="_blank" rel="noreferrer" className="group flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-surface-elevated">
-                <span className="flex items-center gap-2.5 text-sm text-foreground/85">
-                  <Github className="h-4 w-4 text-muted-foreground"/> GitHub
-                </span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">tertiary</span>
-              </a>
-            </div>
+            ))}
           </div>
         </div>
       </div>
-    </section>);
+    </div>
+  </section>);
 }
+
 /* ── Footer ──────────────────────────────────────────────────── */
 export function Footer() {
-    const stats = [
-        { value: "4+", label: "Certifications" },
-        { value: "5+", label: "Production projects" },
-        { value: "30+", label: "Tools & technologies" },
-        { value: "100%", label: "Open source" },
-    ];
-    return (<footer className="border-t border-hairline">
-      <div className="mx-auto max-w-6xl px-6 py-12">
-        {/* social proof stat strip */}
-        <div className="mb-10 grid grid-cols-2 gap-px overflow-hidden rounded-md hairline bg-hairline sm:grid-cols-4">
-          {stats.map((s) => (<div key={s.label} className="flex flex-col items-center bg-surface/50 px-4 py-5">
-              <span className="font-display text-2xl font-bold tracking-tight text-foreground">{s.value}</span>
-              <span className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground text-center">{s.label}</span>
-            </div>))}
-        </div>
-
-        <div className="flex flex-col items-start justify-between gap-3 text-[11px] sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2.5">
-            <span className="grid h-6 w-6 place-items-center rounded-[3px] bg-primary text-primary-foreground font-display text-xs font-bold">DA</span>
-            <span className="font-mono uppercase tracking-[0.22em] text-muted-foreground">
-              Darshan Atkari · © {new Date().getFullYear()}
-            </span>
-          </div>
-          <div className="font-mono uppercase tracking-[0.22em] text-muted-foreground">
-            Designed &amp; engineered with intent.
-          </div>
-        </div>
+  return (<footer className="border-t border-hairline">
+    <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-3 px-6 py-10 sm:flex-row sm:items-center">
+      <div className="flex items-center gap-2.5">
+        <span className="grid h-6 w-6 place-items-center rounded-[3px] bg-primary font-display text-[13px] font-medium leading-none text-primary-foreground">DA</span>
+        <span className="label-mono text-muted-foreground">
+          Darshan Atkari · © {new Date().getFullYear()}
+        </span>
       </div>
-    </footer>);
+      <span className="label-mono text-muted-foreground/60">
+        Designed &amp; engineered with intent.
+      </span>
+    </div>
+  </footer>);
 }

@@ -1,43 +1,19 @@
-import { AnimatePresence } from "framer-motion";
-import { useEffect, useState } from "react";
-import { AmbientTopology, BootSequence, SectionConnector } from "./primitives";
-import { Nav, Hero } from "./hero";
-import { Philosophy, Domains } from "./sections-philosophy";
+import { AmbientTopology, ScrollRail, SectionConnector } from "./primitives";
+import { Hero, Nav } from "./hero";
+import { Domains, Philosophy } from "./sections-philosophy";
 import { Projects } from "./sections-projects";
 import { Stack } from "./sections-stack";
-import { Certifications, GitHubSection } from "./sections-certs-github";
-import { Contact } from "./sections-contact-footer";
+import { Certifications } from "./sections-certs";
+import { Contact, Footer } from "./sections-contact-footer";
+
+/* No boot screen: nothing is loading, so nothing stands in front of the
+   page. The hero is the first paint and reveals itself on arrival. */
 export default function Portfolio() {
-    const [booting, setBooting] = useState(() => {
-        if (typeof window === "undefined")
-            return true;
-        return !sessionStorage.getItem("da:boot");
-    });
-    // Theme state: default dark, persisted in localStorage
-    const [theme, setTheme] = useState(() => {
-        if (typeof window === "undefined")
-            return "dark";
-        return localStorage.getItem("da:theme") ?? "dark";
-    });
-    useEffect(() => {
-        const root = document.documentElement;
-        root.classList.remove("dark", "light");
-        root.classList.add(theme);
-        localStorage.setItem("da:theme", theme);
-    }, [theme]);
-    function handleDone() {
-        sessionStorage.setItem("da:boot", "1");
-        setBooting(false);
-    }
-    return (<main className="relative min-h-screen bg-background text-foreground antialiased">
-      <AnimatePresence>
-        {booting && <BootSequence onDone={handleDone}/>}
-      </AnimatePresence>
-
-      {/* fixed ambient topology layer */}
+  return (
+    <main className="relative min-h-screen bg-background text-foreground antialiased">
       <AmbientTopology />
-
-      <Nav theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")}/>
+      <ScrollRail />
+      <Nav />
 
       <Hero />
       <SectionConnector />
@@ -46,12 +22,13 @@ export default function Portfolio() {
       <Projects />
       <SectionConnector />
       <Philosophy />
+      <SectionConnector />
       <Stack />
       <SectionConnector />
       <Certifications />
       <SectionConnector />
-      <GitHubSection />
-      <SectionConnector />
       <Contact />
-    </main>);
+      <Footer />
+    </main>
+  );
 }

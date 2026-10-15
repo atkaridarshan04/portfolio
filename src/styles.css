@@ -2,8 +2,6 @@
 @source "../src";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -55,7 +53,7 @@
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
-/* ── DARK MODE (default) · "night shift at the data center" ──── */
+/* ── One look: night shift at the data center ─────────────────── */
 :root {
   color-scheme: dark;
   --radius: 0.5rem;
@@ -101,53 +99,12 @@
   --sidebar-border: rgba(231, 233, 228, 0.09);
   --sidebar-ring: rgba(245, 166, 35, 0.45);
   --gradient-hero: radial-gradient(60% 60% at 50% 0%, rgba(245, 166, 35, 0.14), transparent 70%);
-  --shadow-glow: 0 0 80px -20px rgba(245, 166, 35, 0.35);
   --shadow-card: 0 1px 0 0 rgba(231, 233, 228, 0.04) inset, 0 30px 60px -30px rgba(0, 0, 0, 0.7);
-}
 
-/* ── LIGHT MODE · "daylight ops" ─────────────────────────────── */
-.light {
-  color-scheme: light;
-  --background: #f0f1ed;
-  --foreground: #12161b;
-  --surface: #e5e7e0;
-  --surface-elevated: #daddd4;
-  --hairline: rgba(18, 22, 27, 0.10);
-  --card: #e5e7e0;
-  --card-foreground: #12161b;
-  --popover: #eceee8;
-  --popover-foreground: #12161b;
-  --primary: #ad6109;
-  --primary-foreground: #fff7ec;
-  --secondary: #dee1da;
-  --secondary-foreground: #12161b;
-  --muted: #e2e4dd;
-  --muted-foreground: #565c62;
-  --accent: #0e8a91;
-  --accent-foreground: #f0fbfc;
-  --destructive: #c22b30;
-  --destructive-foreground: #fff4f1;
-  --border: rgba(18, 22, 27, 0.10);
-  --input: rgba(18, 22, 27, 0.10);
-  --ring: rgba(173, 97, 9, 0.4);
-  --status-good: #1f8f57;
-  --status-audit: #0e8a91;
-  --chart-1: #ad6109;
-  --chart-2: #0e8a91;
-  --chart-3: #1f8f57;
-  --chart-4: #8a4c06;
-  --chart-5: #565c62;
-  --sidebar: #e9ebe4;
-  --sidebar-foreground: #12161b;
-  --sidebar-primary: #ad6109;
-  --sidebar-primary-foreground: #fff7ec;
-  --sidebar-accent: #dee1da;
-  --sidebar-accent-foreground: #12161b;
-  --sidebar-border: rgba(18, 22, 27, 0.10);
-  --sidebar-ring: rgba(173, 97, 9, 0.4);
-  --gradient-hero: radial-gradient(60% 60% at 50% 0%, rgba(173, 97, 9, 0.10), transparent 70%);
-  --shadow-glow: 0 0 80px -20px rgba(173, 97, 9, 0.22);
-  --shadow-card: 0 1px 0 0 rgba(0, 0, 0, 0.03) inset, 0 30px 60px -30px rgba(0, 0, 0, 0.16);
+  /* motion: one expressive curve for reveals, one mechanical curve for state */
+  --ease-reveal: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-state: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-state: 140ms;
 }
 
 @layer base {
@@ -168,6 +125,9 @@
     color: var(--foreground);
   }
 
+  /* anchors land below the fixed status bar, not under it */
+  section[id] { scroll-margin-top: 5rem; }
+
   a:focus-visible, button:focus-visible, [tabindex]:focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
@@ -184,23 +144,61 @@
   }
 }
 
+/* ── Display type ─────────────────────────────────────────────────
+   Big Shoulders is a condensed face built to run large and light.
+   Weight stays at 300-400 everywhere; scale and whitespace carry the
+   emphasis instead of bolding every heading.                        */
 @utility font-display {
   font-family: var(--font-display);
-  letter-spacing: -0.01em;
   text-transform: uppercase;
+}
+
+/* Headline sizes. A condensed face needs weight to hold together - at 300
+   it goes skeletal, especially huge. 500 has presence without being bold,
+   and the sizes stay in a range the face was drawn for. */
+@utility display-hero {
+  font-size: clamp(3.25rem, 8.5vw, 6.5rem);
+  font-weight: 500;
+  line-height: 0.88;
+  letter-spacing: 0.006em;
+}
+
+@utility display-section {
+  font-size: clamp(2rem, 4.6vw, 3.4rem);
+  font-weight: 500;
+  line-height: 0.94;
+  letter-spacing: 0.008em;
+}
+
+@utility display-sub {
+  font-size: clamp(1.35rem, 2.6vw, 2rem);
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* Everything below a section title is set in the text face, normal case.
+   The condensed display face is for the name and the section titles only -
+   used on every heading it reads uncanny. */
+@utility heading-sans {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  letter-spacing: -0.016em;
 }
 
 @utility font-mono { font-family: var(--font-mono); }
 
+/* The small-caps monospace label used for every system/console annotation. */
+@utility label-mono {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+}
+
 @utility text-balance { text-wrap: balance; }
 
 @utility hairline { border: 1px solid var(--hairline); }
-
-@utility glass {
-  background: color-mix(in oklab, var(--surface) 72%, transparent);
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-}
 
 @utility grain {
   position: relative;
@@ -227,32 +225,248 @@
   mask-image: radial-gradient(ellipse 60% 50% at 50% 40%, black 30%, transparent 80%);
 }
 
-@utility phosphor {
-  font-family: var(--font-mono);
-  color: #ffb84d;
-  text-shadow: 0 0 6px rgba(255, 184, 77, 0.55), 0 0 14px rgba(255, 184, 77, 0.25);
+@utility panel {
+  border: 1px solid var(--hairline);
+  box-shadow: var(--shadow-card);
+}
+
+@utility amber-ring {
+  box-shadow: 0 0 0 1px rgba(245, 166, 35, 0.28), 0 0 28px -8px rgba(245, 166, 35, 0.45);
+}
+
+/* corner ticks - drafting marks, used on the portrait and key plates */
+@utility ticked {
+  position: relative;
+  &::before, &::after {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-color: var(--primary);
+    opacity: 0.7;
+    pointer-events: none;
+  }
+  &::before { top: -1px; left: -1px; border-top: 1px solid; border-left: 1px solid; }
+  &::after { bottom: -1px; right: -1px; border-bottom: 1px solid; border-right: 1px solid; }
+}
+
+@utility scanlines {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(245, 166, 35, 0.045) 0px,
+    rgba(245, 166, 35, 0.045) 1px,
+    transparent 1px,
+    transparent 4px
+  );
 }
 
 @utility section-pad {
-  padding-block: clamp(5rem, 10vw, 9rem);
+  padding-block: clamp(4rem, 8vw, 7rem);
 }
 
-/* Light mode overrides for glass & grain */
-.light .glass {
-  background: color-mix(in oklab, var(--surface) 80%, transparent);
+/* State changes are mechanical, not floaty — a switch, not a sigh. */
+@utility transition-state {
+  transition-property: color, background-color, border-color, opacity, transform, box-shadow;
+  transition-duration: var(--dur-state);
+  transition-timing-function: var(--ease-state);
 }
 
-/* Pulse animation for status dots */
+/* Status dots: the only looping animation on the page. */
 @keyframes status-pulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(63, 191, 127, 0.55); }
-  50% { opacity: 0.85; box-shadow: 0 0 0 4px rgba(63, 191, 127, 0); }
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(63, 191, 127, 0.5); }
+  50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(63, 191, 127, 0); }
 }
 .status-pulse { animation: status-pulse 2.4s ease-in-out infinite; }
 
-/* Packet flow keyframes (used in topology) */
-@keyframes packet-flow {
-  0% { stroke-dashoffset: 100; opacity: 0; }
-  10% { opacity: 0.9; }
-  90% { opacity: 0.9; }
-  100% { stroke-dashoffset: 0; opacity: 0; }
+@keyframes caret-blink {
+  0%, 48% { opacity: 1; }
+  52%, 100% { opacity: 0; }
+}
+.caret-blink { animation: caret-blink 1.1s steps(1, end) infinite; }
+
+/* ═══════════════════════════════════════════════════════════════
+   Motion kit — hand-rolled versions of the patterns the open-source
+   animation libraries (Magic UI, Aceternity, motion-primitives) ship:
+   marquee, spotlight, border beam, shine. Written here so they inherit
+   the amber/graphite palette instead of dragging in a second design
+   system with its own colours and radii.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Marquee ──────────────────────────────────────────────────
+   One track duplicated; translate by exactly -50% so the seam is
+   invisible and the loop never jumps.                           */
+@keyframes marquee-x {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-x var(--marquee-duration, 42s) linear infinite;
+}
+.marquee-track[data-reverse="true"] { animation-direction: reverse; }
+.marquee-mask {
+  mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent);
+}
+.marquee-host:hover .marquee-track { animation-play-state: paused; }
+
+/* ── Spotlight ────────────────────────────────────────────────
+   A radial highlight that tracks the pointer. Two layers: a soft
+   wash inside the card and a brighter one clipped to the border,
+   so the edge lights up where the cursor is.                     */
+@utility spotlight {
+  position: relative;
+  isolation: isolate;
+  &::before, &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 260ms var(--ease-state);
+  }
+  /* interior wash */
+  &::before {
+    z-index: -1;
+    background: radial-gradient(
+      320px circle at var(--mx, 50%) var(--my, 50%),
+      rgba(245, 166, 35, 0.13),
+      transparent 70%
+    );
+  }
+  /* lit border */
+  &::after {
+    z-index: 1;
+    padding: 1px;
+    background: radial-gradient(
+      240px circle at var(--mx, 50%) var(--my, 50%),
+      rgba(245, 166, 35, 0.75),
+      transparent 72%
+    );
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+  }
+  &:hover::before, &:hover::after { opacity: 1; }
+}
+
+/* ── Border beam ──────────────────────────────────────────────
+   A single travelling highlight around a card's edge. @property
+   makes the conic angle animatable; without it the browser can
+   only step between keyframes.                                  */
+@property --beam-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes beam-spin {
+  to { --beam-angle: 360deg; }
+}
+@utility border-beam {
+  position: relative;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: conic-gradient(
+      from var(--beam-angle),
+      transparent 0%,
+      rgba(245, 166, 35, 0.9) 6%,
+      rgba(79, 209, 217, 0.5) 11%,
+      transparent 18%
+    );
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    animation: beam-spin var(--beam-duration, 8s) linear infinite;
+    pointer-events: none;
+  }
+}
+
+/* ── Shine ────────────────────────────────────────────────────
+   A highlight that sweeps across text once in a while. Used on the
+   tagline only — one shining thing per page.                      */
+@keyframes shine-sweep {
+  0%        { background-position: 180% center; }
+  45%, 100% { background-position: -80% center; }
+}
+.text-shine {
+  background: linear-gradient(
+    100deg,
+    var(--primary) 0%,
+    var(--primary) 38%,
+    #fff3d6 48%,
+    var(--primary) 58%,
+    var(--primary) 100%
+  );
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shine-sweep 7s ease-in-out infinite;
+}
+
+/* ── Duotone portrait ─────────────────────────────────────────
+   The source photo has a bright studio backdrop that punches a white
+   hole in a dark page. Grading it to graphite+amber lets it sit in
+   the layout; hover returns it to true colour.                      */
+@utility duotone {
+  filter: grayscale(1) contrast(1.28) brightness(0.44) sepia(0.28);
+  transition: filter 600ms var(--ease-reveal);
+}
+.group:hover .duotone,
+.duotone:hover {
+  filter: grayscale(0) contrast(1.05) brightness(0.72) sepia(0);
+}
+
+/* ── Diagram sheet ────────────────────────────────────────────
+   Three of the four architecture diagrams are drawn on white. Dropped
+   straight onto a graphite page they read as blown-out rectangles — the
+   single loudest thing on the screen, louder than the work they show.
+   They are held back to a printed-sheet value by default and come up to
+   full strength when you hover the plate, the same contract the portrait
+   makes.                                                               */
+@utility diagram-sheet {
+  filter: brightness(0.7) saturate(0.86) contrast(1.03);
+  transition: filter 450ms var(--ease-reveal);
+}
+.group:hover .diagram-sheet { filter: none; }
+
+/* ── Dot matrix ───────────────────────────────────────────────
+   Replaces the heavy grid lines in section backgrounds: quieter and
+   it does not fight the content for the eye.                      */
+@utility dot-matrix {
+  background-image: radial-gradient(rgba(245, 166, 35, 0.16) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* ── Chip ─────────────────────────────────────────────────────
+   One definition for every tool/tag token on the page.           */
+@utility chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: rgba(231, 233, 228, 0.025);
+  padding: 0.125rem 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  transition: color var(--dur-state) var(--ease-state),
+              border-color var(--dur-state) var(--ease-state),
+              background-color var(--dur-state) var(--ease-state);
+  &:hover {
+    border-color: rgba(245, 166, 35, 0.35);
+    background: rgba(245, 166, 35, 0.08);
+    color: var(--primary);
+  }
 }
