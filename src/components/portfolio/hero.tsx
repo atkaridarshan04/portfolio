@@ -46,6 +46,7 @@ function Rise({ children, delay = 0, className = "", as: Tag = "div" }) {
 function LetterReveal({ text, delay = 0, stagger = 28, className = "" }) {
   return (
     <span
+      aria-hidden="true"
       className={`block overflow-hidden ${className}`}
       style={{ paddingBottom: "0.08em", marginBottom: "-0.08em" }}
     >
@@ -257,7 +258,7 @@ export function Hero() {
             <RoleCycler />
           </Rise>
 
-          <h1 className="mt-7 font-display display-hero">
+          <h1 aria-label="Darshan Atkari" className="mt-7 font-display display-hero">
             <LetterReveal text="Darshan" delay={T.name} />
             <LetterReveal text="Atkari" delay={T.surname} className="text-primary" />
           </h1>
