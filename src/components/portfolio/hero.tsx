@@ -198,22 +198,6 @@ export function Hero() {
             ))}
           </div>
         </div>
-
-        {/* what is true today — a readout rail, not a second card */}
-        <dl className="mt-14 grid max-w-3xl grid-cols-2 gap-px border-t border-hairline bg-hairline sm:grid-cols-4">
-          {[
-            ["role", "cloud · devops · sre"],
-            ["focus", "kubernetes platforms"],
-            ["delivery", "gitops · argo · terraform"],
-            ["intake", "open to new work"],
-          ].map(([k, v]) => (
-            <div key={k} className="group relative bg-background px-4 py-4 transition-state hover:bg-surface/70">
-              <span aria-hidden className="absolute inset-x-0 top-0 h-px origin-left scale-x-0 bg-primary transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-x-100" />
-              <dt className="label-mono text-muted-foreground/60">{k}</dt>
-              <dd className="mt-2 font-mono text-[12px] leading-snug text-foreground/85 transition-state group-hover:text-primary">{v}</dd>
-            </div>
-          ))}
-        </dl>
       </div>
     </div>
 

@@ -31,7 +31,7 @@ export function Contact() {
     <div className="mx-auto max-w-6xl px-6">
       <div className="grid grid-cols-1 gap-12 md:grid-cols-12 md:items-end">
         <div className="md:col-span-7">
-          <SectionLabel slug="escalation" state="on call" />
+          <SectionLabel slug="escalation" state="monitored" />
           <Reveal as="h2" className="mt-7 font-display display-section text-balance">
             Let&apos;s build something<br />
             <span className="text-primary">production-grade.</span>
@@ -58,7 +58,7 @@ export function Contact() {
         <div {...spot} className="spotlight w-full overflow-hidden rounded-xl panel bg-surface/60 md:col-span-5">
           <div className="flex items-center gap-2 border-b border-hairline px-4 py-2.5">
             <StatusDot />
-            <span className="label-mono text-muted-foreground">on-call · new opportunities</span>
+            <span className="label-mono text-muted-foreground">direct channels</span>
           </div>
           <div className="flex flex-col divide-y divide-hairline">
             {[
