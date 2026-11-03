@@ -208,26 +208,6 @@ export function useSpotlight() {
   };
 }
 
-/* ── Marquee ──────────────────────────────────────────────────
-   The track is rendered twice and shifted by exactly half its width,
-   so the loop is seamless. Pauses on hover and freezes entirely when
-   the visitor has asked for reduced motion.                        */
-export function Marquee({ children, duration = 42, reverse = false, className = "" }) {
-  const reduce = useReducedMotion();
-  return (
-    <div className={`marquee-host marquee-mask relative overflow-hidden ${className}`}>
-      <div
-        className={reduce ? "flex w-max" : "marquee-track"}
-        data-reverse={reverse ? "true" : undefined}
-        style={{ "--marquee-duration": `${duration}s` }}
-      >
-        <div className="flex shrink-0 items-center">{children}</div>
-        <div aria-hidden className="flex shrink-0 items-center">{children}</div>
-      </div>
-    </div>
-  );
-}
-
 /* ── WordReveal ───────────────────────────────────────────────
    Each word rises out of its own clipped line. Not a blanket
    fade-up: there is no opacity ramp and no vertical drift on the

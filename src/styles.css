@@ -244,29 +244,10 @@
 /* ═══════════════════════════════════════════════════════════════
    Motion kit — hand-rolled versions of the patterns the open-source
    animation libraries (Magic UI, Aceternity, motion-primitives) ship:
-   marquee, spotlight, border beam, shine. Written here so they inherit
+   spotlight, border beam, shine. Written here so they inherit
    the amber/graphite palette instead of dragging in a second design
    system with its own colours and radii.
    ═══════════════════════════════════════════════════════════════ */
-
-/* ── Marquee ──────────────────────────────────────────────────
-   One track duplicated; translate by exactly -50% so the seam is
-   invisible and the loop never jumps.                           */
-@keyframes marquee-x {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-.marquee-track {
-  display: flex;
-  width: max-content;
-  animation: marquee-x var(--marquee-duration, 42s) linear infinite;
-}
-.marquee-track[data-reverse="true"] { animation-direction: reverse; }
-.marquee-mask {
-  mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent);
-  -webkit-mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent);
-}
-.marquee-host:hover .marquee-track { animation-play-state: paused; }
 
 /* ── Spotlight ────────────────────────────────────────────────
    A radial highlight that tracks the pointer. Two layers: a soft
@@ -413,14 +394,6 @@
   from { transform: translateY(118%); }
   to   { transform: translateY(0); }
 }
-@keyframes arrive-wipe {
-  from { clip-path: inset(0 0 0 100%); }
-  to   { clip-path: inset(0 0 0 0); }
-}
-@keyframes arrive-zoom {
-  from { transform: scale(1.14); }
-  to   { transform: scale(1); }
-}
 @keyframes arrive-draw {
   from { transform: scaleY(0); }
   to   { transform: scaleY(1); }
@@ -434,8 +407,6 @@
 
 @utility arrive-rise   { animation: arrive-rise 0.55s var(--ease-reveal) backwards; }
 @utility arrive-letter { display: inline-block; animation: arrive-letter 0.72s var(--ease-reveal) backwards; }
-@utility arrive-wipe   { animation: arrive-wipe 1.1s var(--ease-reveal) backwards; }
-@utility arrive-zoom   { animation: arrive-zoom 1.6s var(--ease-reveal) backwards; }
 @utility arrive-draw   { transform-origin: top; animation: arrive-draw 0.8s var(--ease-reveal) backwards; }
 @utility arrive-sweep  { animation: arrive-sweep 1.5s ease-in-out backwards; }
 
