@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local agent tooling: the Stageshow skill install and preview config
+.agents/
+.claude/
+skills-lock.json
