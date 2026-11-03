@@ -6,7 +6,8 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // The Stageshow kit and skill are vendored as-is from upstream
+  globalIgnores(['dist', 'src/stageshow', '.agents']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
