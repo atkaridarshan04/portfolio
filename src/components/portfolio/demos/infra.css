@@ -1,0 +1,242 @@
+/* The page is the ground: no plate, the stage is transparent on the dark page */
+.tf .ss-stage {
+  overflow: hidden;
+  background: transparent;
+}
+
+/* Corner bleed: inset top and left, off the right, fading at its foot. The
+   left inset is the gutter plus half the terminal, so the terminal straddles
+   the window's sidebar edge evenly. */
+.tf-win {
+  position: absolute;
+  top: 40px;
+  left: 180px;
+  /* 70px past the stage's right edge, which is the viewport's */
+  width: 650px;
+  box-shadow: var(--ss-shadow-hero);
+  -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent 92%);
+  mask-image: linear-gradient(to bottom, #000 62%, transparent 92%);
+}
+
+.tf .ss-stage[data-layout='compact'] .tf-win {
+  top: 16px;
+  left: 16px;
+  width: 420px;
+}
+
+.tf-side {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 14px 10px;
+}
+
+.tf-file {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--ss-radius-sm);
+  color: var(--ss-text-strong);
+  font: 12px/1.3 var(--ss-mono);
+}
+
+.tf-file[data-active] {
+  background: var(--ss-ink-1);
+}
+
+.tf-body {
+  min-height: 420px;
+  background: var(--ss-surface);
+}
+
+.tf .ss-stage[data-layout='compact'] .tf-body {
+  min-height: 360px;
+}
+
+/* The tab bar: the open file on the left, the CI check against the crop */
+.tf-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 40px;
+  padding: 0 86px 0 16px;
+  border-bottom: 1px solid var(--ss-line-faint);
+}
+
+.tf .ss-stage[data-layout='compact'] .tf-tabs {
+  padding: 0 86px 0 12px;
+}
+
+.tf-tablist {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.tf-tab {
+  padding: 4px 9px;
+  border-radius: var(--ss-radius-sm);
+  color: var(--ss-text-faint);
+  font: 500 12px/1.3 var(--ss-mono);
+  white-space: nowrap;
+  transition: color 0.25s ease, background-color 0.25s ease;
+}
+
+.tf-tab[data-on] {
+  background: var(--ss-ink-1);
+  color: var(--ss-text-strong);
+}
+
+/* On a phone only the open file's tab shows */
+.tf .ss-stage[data-layout='compact'] .tf-tab:not([data-on]) {
+  display: none;
+}
+
+/* The files share one cell and crossfade */
+.tf-files {
+  display: grid;
+}
+
+.tf-pane {
+  grid-area: 1 / 1;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.tf-pane[data-on] {
+  opacity: 1;
+  transition: opacity 0.4s ease 0.15s;
+}
+
+.tf-badge .ss-spinner {
+  flex-shrink: 0;
+}
+
+.tf-code {
+  --ss-code-str: #4fd1d9;
+  padding: 14px 0;
+  font: 12px/21px var(--ss-mono);
+}
+
+.tf-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.tf-mark {
+  display: grid;
+  place-items: center;
+  width: 8px;
+  height: 8px;
+}
+
+.tf-mark > * {
+  grid-area: 1 / 1;
+  transition: opacity 0.2s ease;
+}
+
+.tf-mark[data-done] .ss-spinner,
+.tf-mark:not([data-done]) .tf-dot {
+  opacity: 0;
+}
+
+.tf-label {
+  display: grid;
+  justify-items: start;
+  transition: width 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tf-word {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.14s ease;
+}
+
+.tf-word[data-on] {
+  opacity: 1;
+  transition: opacity 0.2s ease 0.12s;
+}
+
+/* ---- The terminal satellite, straddling the sidebar edge ---- */
+
+.tf-term {
+  position: absolute;
+  left: 40px;
+  top: 236px;
+  width: 280px;
+  height: 164px;
+  box-shadow: var(--ss-shadow-satellite);
+}
+
+.tf-term__body {
+  gap: 4px;
+  padding: 6px 16px 16px;
+  font-size: 12px;
+  line-height: 18px;
+  color: #c9cbd1;
+}
+
+.tf-out {
+  opacity: 0;
+  transform: translateY(4px);
+  will-change: transform;
+  transition: opacity 0.35s ease, transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.tf-out[data-on] {
+  opacity: 1;
+  transform: none;
+}
+
+.tf-out.tf-apply[data-on] {
+  transition-delay: 0.35s;
+}
+
+.tf-apply {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tf-meter {
+  position: relative;
+  width: 84px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #222830;
+}
+
+/* The bar fills in step with the count */
+.tf-meter .ss-meter__fill {
+  background: var(--ss-accent);
+  transition-duration: 1.1s;
+  transition-delay: 0.35s;
+}
+
+.tf-bar {
+  flex: none;
+  width: 9ch;
+}
+
+.tf-term .ss-term__caret {
+  margin-left: 3px;
+}
+
+.tf-count {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The reset: everything the loop typed fades as one */
+.tf-term__body[data-clear] .tf-fade {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}

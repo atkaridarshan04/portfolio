@@ -1,0 +1,36 @@
+/* The portfolio's look, mapped onto the Stageshow tokens: graphite surfaces
+   a step apart, one amber accent, the operational green for status only,
+   IBM Plex for words and Plex Mono for identifiers. Every stage on the page
+   is dark and wears this, so the figures read as one set. */
+.look-da .ss-stage[data-theme="dark"] {
+  --ss-canvas: #0e1216;
+  --ss-surface: #12161b;
+  --ss-chrome: #161b21;
+  --ss-raised: #1c2229;
+  --ss-well: #0b0e11;
+  --ss-fill: #2a3038;
+  --ss-line: rgba(231, 233, 228, 0.09);
+  --ss-line-faint: rgba(231, 233, 228, 0.055);
+  --ss-text-strong: #e7e9e4;
+  --ss-text: #8b9198;
+  --ss-text-faint: #5d636a;
+  --ss-icon: #8b9198;
+  --ss-icon-faint: #4b5158;
+  --ss-accent: #f5a623;
+  --ss-accent-2: #c97c11;
+  --ss-accent-soft: rgba(245, 166, 35, 0.16);
+  --ss-accent-text: #f7b955;
+  --ss-success: #3fbf7f;
+  --ss-success-soft: rgba(63, 191, 127, 0.15);
+  --ss-success-text: #5fd39a;
+  --ss-font: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --ss-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  --ss-term-bg: #07090b;
+  --ss-term-path: #4fd1d9;
+  --ss-term-sigil: #f5a623;
+  --ss-term-ok: #3fbf7f;
+  --ss-term-dim: #5d636a;
+  --ss-radius-window: 12px;
+  --ss-shadow-hero: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 0 1px rgba(231, 233, 228, 0.08), 0 30px 60px -20px rgba(0, 0, 0, 0.7);
+  --ss-shadow-satellite: 0 0 0 1px rgba(231, 233, 228, 0.11), 0 18px 40px -10px rgba(0, 0, 0, 0.8), 0 4px 10px -4px rgba(0, 0, 0, 0.5);
+}

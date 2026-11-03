@@ -5,6 +5,7 @@ import { Projects } from "./sections-projects";
 import { Stack } from "./sections-stack";
 import { Certifications } from "./sections-certs";
 import { Contact, Footer } from "./sections-contact-footer";
+import "./demos/look.css";
 
 /* No boot screen: nothing is loading, so nothing stands in front of the
    page. The hero is the first paint and reveals itself on arrival. */
