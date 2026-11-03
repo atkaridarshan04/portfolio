@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import profileImg from "@/assets/profile.jpg";
 import { Ext, Magnetic, Reveal, SectionLabel, StatusDot, WordReveal, useSpotlight } from "./primitives";
 
 const EMAIL = "atkaridarshan04@gmail.com";
@@ -56,9 +57,16 @@ export function Contact() {
 
         {/* routes, best first */}
         <div {...spot} className="spotlight w-full overflow-hidden rounded-xl panel bg-surface/60 md:col-span-5">
-          <div className="flex items-center gap-2 border-b border-hairline px-4 py-2.5">
-            <StatusDot />
-            <span className="label-mono text-muted-foreground">direct channels</span>
+          {/* the person on the other end of these channels */}
+          <div className="flex items-center gap-4 border-b border-hairline px-4 py-4">
+            <img src={profileImg} alt="Portrait of Darshan Atkari" width={535} height={1024}
+              className="duotone h-14 w-14 shrink-0 rounded-md object-cover object-[center_18%]" />
+            <div className="min-w-0">
+              <div className="text-sm text-foreground">Darshan Atkari</div>
+              <div className="mt-1 inline-flex items-center gap-2 label-mono text-muted-foreground">
+                <StatusDot /> direct channels
+              </div>
+            </div>
           </div>
           <div className="flex flex-col divide-y divide-hairline">
             {[
