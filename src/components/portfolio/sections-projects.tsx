@@ -28,10 +28,10 @@ const PROJECTS = [
   },
   {
     num: "02", title: "AWS Cloud Portfolio", kicker: "Cloud Engineering",
-    summary: "Twelve-plus production-inspired AWS builds across serverless, containers, AI workloads, event-driven architecture, networking and security — all provisioned with Terraform.",
+    summary: "Fifteen-plus production-inspired AWS builds across serverless, containers, AI workloads, event-driven architecture, networking and security — all provisioned with Terraform.",
     tech: ["Terraform", "AWS", "EKS", "Lambda", "Bedrock", "CloudFront", "GitHub Actions"],
     outcomes: [
-      "12+ builds spanning distinct cloud architecture patterns",
+      "15+ builds spanning distinct cloud architecture patterns",
       "Each one ships IaC, an architecture diagram and deploy docs",
       "Reusable patterns for security, scale and observability",
     ],
