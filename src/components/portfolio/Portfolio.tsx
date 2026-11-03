@@ -1,6 +1,6 @@
 import { AmbientTopology, ScrollRail, SectionConnector } from "./primitives";
 import { Hero, Nav } from "./hero";
-import { Domains, Philosophy } from "./sections-philosophy";
+import { Philosophy } from "./sections-philosophy";
 import { Projects } from "./sections-projects";
 import { Stack } from "./sections-stack";
 import { Certifications } from "./sections-certs";
@@ -17,8 +17,6 @@ export default function Portfolio() {
       <Nav />
 
       <Hero />
-      <SectionConnector />
-      <Domains />
       <SectionConnector />
       <Projects />
       <SectionConnector />

@@ -15,7 +15,6 @@ import { useEffect, useState } from "react";
 /* ── Section registry — shared by the nav and the rail ───────── */
 export const SECTIONS = [
   { id: "top", label: "Overview" },
-  { id: "domains", label: "Domains" },
   { id: "projects", label: "Projects" },
   { id: "slo", label: "SLOs" },
   { id: "stack", label: "Stack" },
