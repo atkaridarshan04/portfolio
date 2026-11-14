@@ -271,6 +271,9 @@ function yaml(frontmatter) {
 function writeIfChanged(file, content) {
   const existing = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : null;
   if (existing === content) return "unchanged";
+  /* a post without a `source` line was taken over by hand (expanded past the
+     note); the vault version is now the teaser and must not overwrite it */
+  if (existing !== null && !/^source:/m.test(existing.split(/\n---/)[0])) return "kept";
   if (!dryRun) {
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, content);
@@ -291,7 +294,7 @@ function copyIfChanged(src, dest) {
   return "copied";
 }
 
-const counts = { created: 0, updated: 0, unchanged: 0, drafts: 0, skipped: 0, images: 0 };
+const counts = { created: 0, updated: 0, unchanged: 0, kept: 0, drafts: 0, skipped: 0, images: 0 };
 for (const c of bySlug.values()) {
   const converted = convert(c);
   if (!converted) {
@@ -303,6 +306,10 @@ for (const c of bySlug.values()) {
   const content = `${yaml(frontmatter)}\n\n${body}`;
   const status = writeIfChanged(path.join(OUT_DIR, `${c.slug}.md`), content);
   counts[status] += 1;
+  if (status === "kept") {
+    console.log(`kept      ${c.slug} (hand-maintained)`);
+    continue;
+  }
   if (frontmatter.draft) counts.drafts += 1;
   /* a draft's images stay in the vault: public/ ships with the site, draft or not */
   for (const img of images) {
@@ -331,5 +338,5 @@ if (fs.existsSync(OUT_DIR)) {
 }
 
 console.log(
-  `\n${dryRun ? "[dry run] " : ""}${bySlug.size} posts: ${counts.created} created, ${counts.updated} updated, ${counts.unchanged} unchanged, ${counts.drafts} drafts, ${counts.skipped} skipped, ${counts.images} images copied`,
+  `\n${dryRun ? "[dry run] " : ""}${bySlug.size} posts: ${counts.created} created, ${counts.updated} updated, ${counts.unchanged} unchanged, ${counts.kept} kept, ${counts.drafts} drafts, ${counts.skipped} skipped, ${counts.images} images copied`,
 );

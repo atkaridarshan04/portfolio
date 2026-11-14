@@ -2,6 +2,7 @@
 /* The document shell every page shares: the head that index.html used to
    carry, now with a canonical URL and Open Graph block per page, and the
    RSS feed advertised so readers' tools can find it. */
+import { ClientRouter } from "astro:transitions";
 import "@/styles.css";
 import favicon from "@/assets/favicon-256.png";
 
@@ -13,6 +14,9 @@ interface Props {
   type?: "website" | "article";
   image?: string;
   imageAlt?: string;
+  /* client-side navigation between pages that opt in (the writing pages);
+     the home page stays a full load so its island mounts fresh */
+  transitions?: boolean;
 }
 
 const {
@@ -22,6 +26,7 @@ const {
   type = "website",
   image = "/og-image.jpg",
   imageAlt = "Darshan Atkari - cloud, DevOps, SRE and MLOps engineer",
+  transitions = false,
 } = Astro.props;
 
 const site = Astro.site ?? new URL("https://atkaridarshan.online/");
@@ -70,6 +75,7 @@ const feed = new URL("/rss.xml", site).href;
       rel="stylesheet"
     />
 
+    {transitions && <ClientRouter />}
     <slot name="head" />
   </head>
   <body>

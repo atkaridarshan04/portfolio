@@ -33,7 +33,7 @@ draft: true                                           # shown in dev only
 ---
 ```
 
-Images referenced from a post go under `public/writing/<slug>/` and are linked as `/writing/<slug>/name.png`.
+Images referenced from a post go under `public/writing/<slug>/` and are linked as `/writing/<slug>/name.png`. Optional `files:` lists the repository paths a post cites, shown as a source panel under the body. The syntax the post page renders (titled code fences, callouts, figures, footnotes) is in [docs/writing-guide.md](docs/writing-guide.md). Every post gets an Open Graph card drawn at build time from its title, deck, date and tags, served at `/writing/<slug>/og.png`.
 
 ### Writing in Obsidian
 
@@ -44,4 +44,4 @@ npm run sync:posts            # VAULT_DIR or --vault override the vault path
 npm run sync:posts -- --dry-run
 ```
 
-Every note under `Tech/LinkedIn Posts` tagged `LinkedIn` is a post; any other note becomes one with `Publish: true` in its frontmatter, and `Publish: false` opts out. Optional frontmatter: `Slug`, `Title`, `Description`, `Repo`, `Updated`, `Draft`. The note name is the title, with anything after ` - ` used as the deck; image embeds are copied across, wikilinks become plain text or a link to another published note, and the trailing hashtag line becomes tags. A note that mentions an internal name is written as a draft and reported, so check the output before committing.
+Every note under `Tech/LinkedIn Posts` tagged `LinkedIn` is a post; any other note becomes one with `Publish: true` in its frontmatter, and `Publish: false` opts out. Optional frontmatter: `Slug`, `Title`, `Description`, `Repo`, `Updated`, `Draft`. The note name is the title, with anything after ` - ` used as the deck; image embeds are copied across, wikilinks become plain text or a link to another published note, and the trailing hashtag line becomes tags. A note that mentions an internal name is skipped and reported, since this repository is public. A post whose `source:` line has been removed is treated as hand-maintained and left alone, so a note can be expanded here past its vault version.

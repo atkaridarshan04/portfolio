@@ -20,6 +20,9 @@ const { tag, posts } = Astro.props;
   title={`${tag} | Field notes | Darshan Atkari`}
   description={`Field notes tagged ${tag}: ${posts.length} write-up${posts.length === 1 ? "" : "s"} by Darshan Atkari.`}
   path={`/writing/tags/${tagSlug(tag)}/`}
+  image="/writing/og.png"
+  imageAlt="Field notes by Darshan Atkari"
+  transitions
 >
   <SiteHeader current="writing" />
   <main class="relative min-h-screen bg-background text-foreground antialiased">

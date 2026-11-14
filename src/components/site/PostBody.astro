@@ -1,0 +1,57 @@
+---
+/* The rendered Markdown, post-processed once at build time. The processor
+   gives plain HTML; this pass adds the chrome the page needs without any
+   client-side work: a labelled header on every code block, figures with
+   captions, callout asides, heading anchors, scrollable tables and
+   external links that open in a new tab. The regexes run against our own
+   processor's output only, never against arbitrary HTML. */
+let html = await Astro.slots.render("default");
+
+const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+/* code blocks: <pre class="astro-code" data-language data-title> → figure with a head */
+html = html.replace(/<pre class="astro-code[^"]*"([^>]*)>([\s\S]*?)<\/pre>/g, (_, attrs: string, inner: string) => {
+  const lang = attrs.match(/data-language="([^"]*)"/)?.[1] ?? "";
+  const title = attrs.match(/data-title="([^"]*)"/)?.[1];
+  const label = title ?? (lang === "text" || lang === "plaintext" ? "output" : lang);
+  return (
+    `<figure class="code-block" data-language="${escape(lang)}">` +
+    `<figcaption class="code-head">` +
+    `<span class="code-title">${escape(label)}</span>` +
+    (title && lang ? `<span class="code-lang">${escape(lang)}</span>` : "") +
+    `<button type="button" class="code-copy" aria-label="Copy code">copy</button>` +
+    `</figcaption>` +
+    `<pre class="astro-code"${attrs.replace(/ style="[^"]*"/, "")}>${inner}</pre>` +
+    `</figure>`
+  );
+});
+
+/* headings: a quiet anchor after the text */
+html = html.replace(/<(h[23]) id="([^"]+)">([\s\S]*?)<\/\1>/g, (_, tag: string, id: string, text: string) =>
+  `<${tag} id="${id}">${text}<a class="anchor" href="#${id}" aria-label="Link to this section">#</a></${tag}>`,
+);
+
+/* figures: an image alone in a paragraph, alt as the caption, zoomable */
+html = html.replace(/<p><img src="([^"]+)" alt="([^"]*)"[^>]*><\/p>/g, (_, src: string, alt: string) =>
+  `<figure class="figure">` +
+  `<a href="${src}" class="figure-zoom" data-lightbox aria-label="Enlarge figure"><img src="${src}" alt="${alt}" loading="lazy" decoding="async"></a>` +
+  (alt ? `<figcaption>${alt}</figcaption>` : "") +
+  `</figure>`,
+);
+
+/* callouts: a quote whose first line is [!kind] Title */
+html = html.replace(/<blockquote>\s*<p>\[!(\w+)\][ \t]*([^\n<]*)\n?([\s\S]*?)<\/blockquote>/g, (_, kind: string, title: string, rest: string) => {
+  const k = kind.toLowerCase();
+  const heading = title.trim() || k[0].toUpperCase() + k.slice(1);
+  const body = rest.replace(/^\s*<\/p>/, "").trim();
+  return `<aside class="callout" data-kind="${escape(k)}"><p class="callout-title">${heading}</p>${body ? `<p>${body}` : ""}</aside>`;
+});
+
+/* tables scroll sideways on a phone instead of breaking the measure */
+html = html.replace(/<table>([\s\S]*?)<\/table>/g, '<div class="table-wrap"><table>$1</table></div>');
+
+/* links that leave the site open in a new tab */
+html = html.replace(/<a href="(https?:\/\/[^"]+)"(?![^>]*target=)/g, '<a href="$1" target="_blank" rel="noreferrer"');
+---
+
+<div class="post-body" set:html={html} />

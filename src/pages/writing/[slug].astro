@@ -3,22 +3,47 @@ import { render } from "astro:content";
 import Base from "@/layouts/Base.astro";
 import SiteHeader from "@/components/site/SiteHeader.astro";
 import SiteFooter from "@/components/site/SiteFooter.astro";
-import { formatDate, getPublishedPosts, readingTime, tagSlug } from "@/lib/posts";
+import PostBody from "@/components/site/PostBody.astro";
+import Lightbox from "@/components/site/Lightbox.astro";
+import { formatDate, getPublishedPosts, readingTime, tagSlug, type Post } from "@/lib/posts";
 
 export async function getStaticPaths() {
   const posts = await getPublishedPosts();
   return posts.map((post, i) => ({
     params: { slug: post.id },
-    props: { post, newer: posts[i - 1], older: posts[i + 1] },
+    props: { post, newer: posts[i - 1], older: posts[i + 1], all: posts },
   }));
 }
 
-const { post, newer, older } = Astro.props;
-const { Content } = await render(post);
-const { title, deck, description, date, updated, tags, repo, linkedin, draft } = post.data;
+interface Props {
+  post: Post;
+  newer?: Post;
+  older?: Post;
+  all: Post[];
+}
+
+const { post, newer, older, all } = Astro.props;
+const { Content, headings } = await render(post);
+const { title, deck, description, date, updated, tags, repo, files, linkedin, draft } = post.data;
 const minutes = readingTime(post.body);
 const path = `/writing/${post.id}/`;
 const fullTitle = deck ? `${title} — ${deck}` : title;
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+
+/* related: the notes that share the most tags, ties broken by recency */
+const mine = new Set(tags.map(tagSlug));
+const related = all
+  .filter((p) => p.id !== post.id)
+  .map((p) => ({ p, shared: p.data.tags.filter((t) => mine.has(tagSlug(t))).length }))
+  .filter((r) => r.shared > 0)
+  .sort((a, b) => b.shared - a.shared || b.p.data.date.valueOf() - a.p.data.date.valueOf())
+  .slice(0, 3)
+  .map((r) => r.p);
+
+/* the source panel: repository name and the files the note cites */
+const repoRoot = repo?.match(/^https:\/\/github\.com\/[^/]+\/[^/#?]+/)?.[0];
+const repoName = repoRoot?.replace("https://github.com/", "");
+const fileLink = (f: string) => `${repoRoot}/blob/main/${f}`;
 
 const article = {
   "@context": "https://schema.org",
@@ -29,11 +54,12 @@ const article = {
   dateModified: (updated ?? date).toISOString(),
   keywords: tags.join(", "),
   url: new URL(path, Astro.site).href,
+  image: new URL(`${path}og.png`, Astro.site).href,
   author: { "@type": "Person", name: "Darshan Atkari", url: "https://atkaridarshan.online/" },
 };
 ---
 
-<Base title={`${fullTitle} | Darshan Atkari`} description={description} path={path} type="article">
+<Base title={`${fullTitle} | Darshan Atkari`} description={description} path={path} type="article" image={`${path}og.png`} imageAlt={fullTitle} transitions>
   <Fragment slot="head">
     <meta property="article:published_time" content={date.toISOString()} />
     {updated && <meta property="article:modified_time" content={updated.toISOString()} />}
@@ -43,13 +69,41 @@ const article = {
 
   <SiteHeader current="writing" />
   <main class="relative min-h-screen bg-background text-foreground antialiased">
-    <article class="section-pad pt-32 sm:pt-36">
-      <div class="mx-auto max-w-3xl px-6">
-        <a href="/writing/" class="group inline-flex items-center gap-2 font-mono text-[12px] text-muted-foreground transition-state hover:text-primary">
+    <div class="mx-auto max-w-6xl px-6 pt-32 sm:pt-36 xl:grid xl:grid-cols-[13rem_minmax(0,48rem)] xl:justify-center xl:gap-16">
+      {/* the rail: progress and the table of contents, wide screens only */}
+      <aside class="hidden xl:block">
+        <div class="sticky top-28 flex gap-4">
+          <div class="relative w-px shrink-0 self-stretch bg-hairline" aria-hidden>
+            <div class="rail-fill absolute inset-x-0 top-0 h-full origin-top bg-primary/70" style="transform: scaleY(0)"></div>
+          </div>
+          <nav class="toc min-w-0" aria-label="On this page">
+            <p class="label-mono text-muted-foreground/60">on this page</p>
+            {toc.length ? (
+              <ol class="mt-3 space-y-1.5">
+                {toc.map((h) => (
+                  <li class={h.depth === 3 ? "pl-3" : ""}>
+                    <a href={`#${h.slug}`} class="block py-0.5 text-[12.5px] leading-snug text-muted-foreground transition-state hover:text-foreground">{h.text}</a>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p class="mt-3 text-[12.5px] text-muted-foreground/60">A short note. No sections.</p>
+            )}
+            <div class="mt-6 border-t border-hairline pt-4">
+              <a href="/writing/" class="group inline-flex items-center gap-2 font-mono text-[11px] text-muted-foreground transition-state hover:text-primary">
+                <span aria-hidden>←</span> all field notes
+              </a>
+            </div>
+          </nav>
+        </div>
+      </aside>
+
+      <article class="section-pad pt-0 sm:pt-0" data-progress>
+        <a href="/writing/" class="group inline-flex items-center gap-2 font-mono text-[12px] text-muted-foreground transition-state hover:text-primary xl:hidden">
           <span aria-hidden>←</span> all field notes
         </a>
 
-        <div class="mt-8 flex flex-wrap items-center gap-3">
+        <div class="mt-8 flex flex-wrap items-center gap-3 xl:mt-0">
           <span class="label-mono text-muted-foreground">component / writing</span>
           <div class="h-px w-8 bg-hairline"></div>
           <span class="font-mono text-[11px] text-muted-foreground">
@@ -79,15 +133,60 @@ const article = {
           </div>
         </div>
 
-        <div class="post-body mt-10">
-          <Content />
+        <div class="mt-10">
+          <PostBody><Content /></PostBody>
         </div>
 
         {updated && (
           <p class="mt-10 font-mono text-[11px] text-muted-foreground/60">updated {formatDate(updated)}</p>
         )}
 
-        <nav class="mt-16 grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-hairline bg-hairline sm:grid-cols-2" aria-label="Adjacent notes">
+        {repoRoot && (
+          <section class="mt-14 rounded-lg panel bg-surface/50 p-5 sm:p-6" aria-label="Source">
+            <div class="flex flex-wrap items-baseline justify-between gap-3">
+              <span class="label-mono text-muted-foreground">source / repository</span>
+              <a href={repoRoot} target="_blank" rel="noreferrer" class="group inline-flex items-center gap-2 font-mono text-[13px] text-foreground transition-state hover:text-primary">
+                {repoName} <span aria-hidden class="inline-block translate-y-px opacity-60 group-hover:opacity-100">↗</span>
+              </a>
+            </div>
+            {files.length > 0 && (
+              <ul class="mt-4 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                {files.map((f) => (
+                  <li>
+                    <a href={fileLink(f)} target="_blank" rel="noreferrer" class="group flex items-baseline gap-2 rounded-sm px-2 py-1.5 font-mono text-[12px] text-muted-foreground transition-state hover:bg-background/60 hover:text-primary">
+                      <span aria-hidden class="h-px w-2.5 shrink-0 translate-y-[-3px] bg-primary/60"></span>
+                      <span class="min-w-0 break-all">{f}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
+        {related.length > 0 && (
+          <section class="mt-14" aria-label="Related notes">
+            <div class="flex items-center gap-3">
+              <span class="label-mono text-muted-foreground">related / notes</span>
+              <div class="h-px flex-1 bg-hairline"></div>
+            </div>
+            <ul class="mt-2 border-t border-hairline">
+              {related.map((r) => (
+                <li class="border-b border-hairline">
+                  <a href={`/writing/${r.id}/`} class="group grid grid-cols-1 gap-x-4 gap-y-1 rounded-lg px-3 py-4 transition-state hover:bg-surface/40 sm:grid-cols-[1fr_auto] sm:items-baseline">
+                    <span class="min-w-0">
+                      <span class="block heading-sans text-[15px] leading-snug text-foreground transition-state group-hover:text-primary">{r.data.title}</span>
+                      {r.data.deck && <span class="mt-1 block text-[13px] text-muted-foreground">{r.data.deck}</span>}
+                    </span>
+                    <span class="font-mono text-[11px] text-muted-foreground">{formatDate(r.data.date)} · {readingTime(r.body)} min</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <nav class="mt-12 grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-hairline bg-hairline sm:grid-cols-2" aria-label="Adjacent notes">
           {older ? (
             <a href={`/writing/${older.id}/`} class="group bg-background p-5 transition-state hover:bg-surface/60">
               <span class="label-mono text-muted-foreground/60">← older</span>
@@ -105,8 +204,10 @@ const article = {
             <span class="bg-background p-5"></span>
           )}
         </nav>
-      </div>
-    </article>
+      </article>
+    </div>
   </main>
+  <Lightbox />
   <SiteFooter />
+  <script src="@/components/site/post-enhancements.ts"></script>
 </Base>

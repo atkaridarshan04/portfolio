@@ -15,8 +15,9 @@ const posts = defineCollection({
     date: z.coerce.date(),
     updated: z.coerce.date().optional(),
     tags: z.array(z.string()).default([]),
-    /* the repository or doc the note came out of */
+    /* the repository or doc the note came out of, and the files it cites */
     repo: z.string().url().optional(),
+    files: z.array(z.string()).default([]),
     /* where the discussion happened, if it was posted */
     linkedin: z.string().url().optional(),
     /* drafts build in dev and are left out of the production site */
