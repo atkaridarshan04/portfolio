@@ -54,7 +54,7 @@ A misused credential can't reach outside its tier, and a new database becomes on
 
 The database groundwork runs once, from one connection to the administrative database, because `CREATE ROLE` and `GRANT` on databases are cluster-wide.
 
-```sql title="db/groundwork.sql"
+```sql title="groundwork.sql"
 CREATE ROLE vault_admin WITH LOGIN PASSWORD '<bootstrap-password>' CREATEROLE NOINHERIT;
 
 CREATE ROLE grp_readonly  NOLOGIN;
@@ -75,7 +75,7 @@ GRANT grp_admin     TO vault_admin WITH ADMIN OPTION;
 
 `vault_admin` is not a superuser, not the RDS master user, not an object owner. `CREATEROLE` lets it create logins, `WITH ADMIN OPTION` lets it grant membership in exactly these groups, and `NOINHERIT` stops it from using the groups' privileges itself. `pg_read_all_data` and `pg_write_all_data` (PG14+) cover every table, view and sequence in the connected database, including ones created later, so there's no per-schema bookkeeping as the schema evolves.
 
-The write tiers get no DDL, deliberately. `CREATE TABLE` isn't a grantable privilege in Postgres; it's gated by ownership, and whoever runs it owns the result. Ownership is per-database and Vault's admin connection only talks to one, so a temporary role that creates an object elsewhere can't be dropped at lease expiry and the lease sticks. DML/DQL-only means nothing a credential does creates ownership, so `DROP ROLE` always succeeds. Schema changes belong to migration tooling with its own service account.
+The write tiers get no DDL, deliberately. Creating a table needs `CREATE` on the schema, which these roles never get, and whoever creates an object owns it; `ALTER` and `DROP` on it are gated by that ownership, not by any grant. Ownership is per-database and Vault's admin connection only talks to one, so a temporary role that creates an object elsewhere can't be dropped at lease expiry and the lease sticks. DML/DQL-only means nothing a credential does creates ownership, so `DROP ROLE` always succeeds. Schema changes belong to migration tooling with its own service account.
 
 ### CONNECT scoping is what enforces the split
 
@@ -138,7 +138,7 @@ Four hours by default, renewable to eight, suits interactive human access: it su
 
 Finally, who can request what. One policy per tier, attached to IdP groups:
 
-```hcl title="vault/policies/db-dev-rw.hcl"
+```hcl title="policies/db-dev-rw.hcl"
 path "database/creds/dev-rw" {
   capabilities = ["read"]
 }
@@ -147,6 +147,11 @@ path "database/creds/dev-rw" {
 # seeing a role name carries no access to it.
 path "database/roles" {
   capabilities = ["list"]
+}
+
+# the UI's role detail page is a separate read
+path "database/roles/dev-rw" {
+  capabilities = ["read"]
 }
 ```
 
@@ -172,9 +177,9 @@ psql -h <DB_HOST> -p 5432 -U v_github-jsmith_9f3ac1b2 -d app_dev "sslmode=requir
 
 That credential reaches `app_dev` and nothing else. Pointing it at `app_qa` comes back `FATAL: permission denied for database "app_qa"`, even though it was created over a connection to the administrative database. Reach is decided by the `CONNECT` grants and the group it joined, not by where the issuing connection points. When the engineer is done, `vault lease revoke` or just walk away. Revocation isn't a task anyone has to remember.
 
-The same flow works in the UI: Secrets, `database/`, Roles, the role, Generate credentials. It needs slightly more policy than the CLI, because rendering the roles list and the role's detail page are separate reads, which is why the policy above carries `list`. The trade-off is that `list` exposes every role name under the mount, including ones the holder can't use.
+The same flow works in the UI: Secrets, `database/`, Roles, the role, Generate credentials. It needs slightly more policy than the CLI, because rendering the roles list and the role's detail page are separate reads, which is why the policy above carries `list` on the roles path and `read` on the role itself. The trade-off is that `list` exposes every role name under the mount, including ones the holder can't use.
 
-![Vault UI generating a dynamic PostgreSQL credential for a developer role: username, password and lease duration](/writing/who-ran-that-query/vault-dynamic-db-credentials-ui.png)
+![Vault UI generating a dynamic PostgreSQL credential during the demo run: a `developer` role with a one-hour lease, the same mechanism as `dev-rw` with its longer lease](/writing/who-ran-that-query/vault-dynamic-db-credentials-ui.png)
 
 ### Two logs, one join key
 
@@ -189,7 +194,7 @@ Sensitive response fields are HMAC-hashed in the audit log by default. That's ri
 
 On the Postgres side, on RDS, it's a parameter-group change. `log_connections` and `log_disconnections` tie a generated username to a real session. pgAudit's `role` class covers `CREATE`/`ALTER`/`DROP ROLE` and `GRANT`/`REVOKE`, which is exactly the lifecycle of a JIT credential.
 
-```hcl title="terraform/rds-parameter-group.tf"
+```hcl title="rds-parameter-group.tf"
 parameter {
   name         = "shared_preload_libraries"
   value        = "pgaudit"

@@ -138,7 +138,7 @@ spec:
 The `subject` is the whole policy. It names the repo, the workflow file and the branch. `issuer` pins the identity provider to GitHub's OIDC endpoint, and `rekor.url` tells Kyverno which transparency log to check the entry against.
 
 > [!note] The subject includes the branch
-> The certificate Sigstore issues encodes the real ref the workflow ran on. A genuinely signed image built from a feature branch gets rejected by this policy for the same reason `cosign verify` with `@refs/heads/main` would — the subject doesn't match, not because the signature is broken. While I was testing on a feature branch I temporarily pointed that line at the branch, verified both cases, and reverted it before merging.
+> The certificate Sigstore issues encodes the real ref the workflow ran on. A genuinely signed image built from a feature branch gets rejected by this policy for the same reason `cosign verify` with `@refs/heads/main` would — the subject doesn't match, not because the signature is broken. While I was testing on a feature branch I temporarily pointed that line at the branch, verified both cases, and reverted it before merging. One more detail worth being honest about: the workflow triggers on `v*` tag pushes and manual dispatch, with its push-to-`main` trigger commented out, so a tag-triggered build signs with a `@refs/tags/v…` subject that this policy would reject. The runs behind these screenshots were dispatches on `main`; widening the subject is a one-line change when releases move to tags.
 
 ## Running it: signed in, unsigned out
 
@@ -151,7 +151,7 @@ cosign verify \
   ghcr.io/atkaridarshan04/cloudnative-devops-blueprint/bookstore-frontend@<digest>
 ```
 
-A valid signature prints the Rekor log entry and the certificate identity that signed it. The SBOM attestation comes back the same way through `cosign verify-attestation --type spdxjson`, and piping the payload through `jq '.predicate.packages | length'` is enough to prove it's a real inventory and not an empty statement.
+A valid signature prints the Rekor log entry and the certificate identity that signed it. The SBOM attestation comes back the same way through `cosign verify-attestation --type spdxjson`, and piping the payload through `jq -r '.payload' | base64 -d | jq '.predicate.packages | length'` is enough to prove it's a real inventory and not an empty statement.
 
 Then the cluster. Apply the policy and confirm it registered:
 
@@ -187,7 +187,7 @@ verify-ghcr-image-signatures:
 
 ![The unsigned 3.0.0 tag is denied at admission: Kyverno reports no signatures found for the keyless attestor](/writing/trust-the-pipeline-not-the-tag/unsigned-test-failure.png)
 
-<!-- TODO: verify why the denying webhook is named mutate.kyverno.svc-fail rather than validate — not stated in the repo docs -->
+The denial names a webhook called `mutate.kyverno.svc-fail` rather than a validating one, and that isn't a mislabel. Kyverno runs `verifyImages` inside its mutating webhook first, because the rule may rewrite the image reference to its digest (`mutateDigest` is on by default), so the decision is made before validation ever runs.
 
 The Pod never gets created. There's nothing to clean up, no CrashLoop, no container that ran for a few seconds before anyone noticed — the API server refused the object. The same denial is recorded as a Kubernetes event, which is where you'd look if a Deployment's Pods silently never appeared:
 
@@ -200,7 +200,7 @@ Warning  PolicyViolation  kyverno-admission  Pod mern-devops/test-unsigned: [ver
 ```
 
 > [!tip] If the unsigned Pod gets admitted anyway
-> The policy isn't enforcing. Check that `validationFailureAction` is `Enforce` and not `Audit`, and that `background: false` isn't being read as "skip live admission checks" — it only means Kyverno won't re-scan existing resources, which it can't meaningfully do for signatures anyway.
+> The policy isn't enforcing. Check that `validationFailureAction` is `Enforce` and not `Audit`, and that `background: false` isn't being read as "skip live admission checks" — it only means the policy runs at admission and isn't applied to resources that already exist.
 
 ## Where it breaks quietly
 
@@ -217,5 +217,5 @@ None of these produce a bad signature. They produce no signature, or no verifica
 - A CVE scan and a signature answer different questions. The scan says what's inside; the signature says who built it and from what. You need both, and the second is the one most pipelines skip.
 - Sign the digest, deploy by digest. The tag is the mutable thing the whole post is arguing against; the moment the workflow extracts `containerimage.digest` from the bake output, nothing downstream touches a tag again.
 - The identity in the policy is the control. `issuer` plus a `subject` that names the repo, workflow file and branch is what turns "signed by someone" into "signed by this pipeline." Get that string wrong and valid images get rejected; get it too loose and the gate is decorative.
-- Enforce at admission, not in CI. The pipeline already trusts itself. The one place a trust check can't be skipped is the API server, and that's where `verifyImages` lives — alongside the tag and label policies already there, on the same mechanism I covered for promotions in [Synced Isn't Healthy](/writing/synced-isnt-healthy/).
+- Enforce at admission, not in CI. The pipeline already trusts itself. The one place a trust check can't be skipped is the API server, and that's where `verifyImages` lives — alongside the tag and label policies already there, on the same principle as the promotion gates in [Synced Isn't Healthy](/writing/synced-isnt-healthy/): take the trust decision out of CI and put it where it can't be skipped.
 - Test the negative case. "Signing succeeded" proves nothing. The policy only earns its place when an unsigned image on the same registry path is turned away with `no signatures found`.

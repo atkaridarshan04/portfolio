@@ -6,7 +6,7 @@ date: 2026-10-03
 updated: 2026-11-14
 tags: ["GitOps", "ArgoCD", "Kargo", "Kubernetes", "DevOps"]
 repo: "https://github.com/atkaridarshan04/cloudnative-devops-blueprint/blob/main/docs/Kargo.md"
-files: ["kargo/warehouse.yml", "kargo/stage-staging.yml", "kargo/project-config.yml", "kargo/promotion-task.yml", "argocd/application-dev.yml", "docs/Kargo.md"]
+files: ["kargo/warehouse.yml", "kargo/stage-dev.yml", "kargo/stage-staging.yml", "kargo/stage-prod.yml", "kargo/project-config.yml", "kargo/promotion-task.yml", "argocd/application-dev.yml", "docs/Kargo.md"]
 ---
 
 The fastest way to ship to Kubernetes is to let CI run `helm upgrade` right after the build finishes. It's also the easiest way to lose track of what's actually running where.
@@ -23,7 +23,7 @@ ArgoCD reconciles whatever is in git into the cluster. That is its whole job, an
 
 The reason that's wrong comes down to two statuses ArgoCD reports separately. `Synced` means the cluster matches git: the Deployment manifest with the new tag was applied. `Healthy` means the workload actually came up: the rollout finished, the pods are ready. A commit that bumps an image tag will go `Synced` almost instantly. Whether it ever goes `Healthy` is a different question with a different answer, and the gap between those two is exactly where a bad build lives. If the next environment's trigger is "dev was applied," a build that applied and then crashlooped is already on its way to staging.
 
-Kargo's model makes "healthy upstream" the thing the next environment literally requests. Four objects do the work:
+Kargo's model makes "healthy upstream" the thing the next environment literally requests. Five objects do the work:
 
 - A **Warehouse** watches artifact sources — container image tags here — and produces **Freight** whenever something new shows up.
 - **Freight** is an immutable snapshot of a specific set of versions. It's generated, never hand-written, and it is the thing that moves through the pipeline.
@@ -102,7 +102,7 @@ spec:
       autoPromotionEnabled: false
 ```
 
-All three Stages share one `PromotionTask`. It clones the repo, runs `kustomize-set-image` against the Stage's overlay path, commits, pushes to a generated branch instead of straight to `main`, opens a PR into `main`, blocks until that PR is merged, then runs `argocd-update`:
+All three Stages share one `PromotionTask`. It clones the repo, runs `kustomize-set-image` against the Stage's overlay path, commits, pushes to a generated branch instead of straight to `main`, opens a PR into `main`, blocks until that PR is merged (a PR closed without merging fails the Promotion), then runs `argocd-update`:
 
 ```yaml title="kargo/promotion-task.yml"
     - uses: git-push
@@ -118,6 +118,7 @@ All three Stages share one `PromotionTask`. It clones the repo, runs `kustomize-
         provider: github
         sourceBranch: ${{ task.outputs.push.branch }}
         targetBranch: ${{ vars.branch }}
+        # ... title and description, templated from the Freight
 
     - uses: git-wait-for-pr
       as: wait-for-pr
@@ -144,12 +145,14 @@ metadata:
   namespace: argocd
   annotations:
     kargo.akuity.io/authorized-stage: book-store:dev
+    # ...
 spec:
   project: book-store
   source:
     repoURL: https://github.com/atkaridarshan04/CloudNative-DevOps-Blueprint.git
     targetRevision: main
     path: kustomize/overlays/dev
+  # ... destination
   syncPolicy:
     automated:
       prune: true
@@ -180,15 +183,23 @@ kubectl apply -f kargo/stage-prod.yml
 kubectl get promotions -n book-store -w
 ```
 
-This is the watch from the first, pinned run, where nothing had to change in git. Each Promotion finishes in seconds because the PR steps skipped themselves, and staging's Promotion only appears after dev's reaches `Succeeded`:
+This is the watch from the first, pinned run, where nothing had to change in git; only the empty `SHARD` column is trimmed. Each Promotion finishes in seconds because the PR steps skipped themselves, and staging's Promotion only appears after dev's reaches `Succeeded`. Prod starts on its own here because this capture predates the prod policy; with today's `autoPromotionEnabled: false` the watch stops at staging until someone promotes from the dashboard:
 
 ```text
 NAME                                       STAGE     FREIGHT                                    PHASE       AGE
 dev.01ky6nk6js60acxrtps1mdnxyj.7575b14     dev       7575b14a286595a77ad6e0db8cf6fdfcd46265c7   Running     2s
+dev.01ky6nk6js60acxrtps1mdnxyj.7575b14     dev       7575b14a286595a77ad6e0db8cf6fdfcd46265c7   Running     9s
 dev.01ky6nk6js60acxrtps1mdnxyj.7575b14     dev       7575b14a286595a77ad6e0db8cf6fdfcd46265c7   Succeeded   10s
+staging.01ky6nkgc9se61bn1ycpp3gcn5.7575b14 staging   7575b14a286595a77ad6e0db8cf6fdfcd46265c7               0s
 staging.01ky6nkgc9se61bn1ycpp3gcn5.7575b14 staging   7575b14a286595a77ad6e0db8cf6fdfcd46265c7   Pending     0s
 staging.01ky6nkgc9se61bn1ycpp3gcn5.7575b14 staging   7575b14a286595a77ad6e0db8cf6fdfcd46265c7   Running     0s
+staging.01ky6nkgc9se61bn1ycpp3gcn5.7575b14 staging   7575b14a286595a77ad6e0db8cf6fdfcd46265c7   Running     8s
 staging.01ky6nkgc9se61bn1ycpp3gcn5.7575b14 staging   7575b14a286595a77ad6e0db8cf6fdfcd46265c7   Succeeded   9s
+prod.01ky6nm6fnqm168evy0pqab97j.7575b14    prod      7575b14a286595a77ad6e0db8cf6fdfcd46265c7               0s
+prod.01ky6nm6fnqm168evy0pqab97j.7575b14    prod      7575b14a286595a77ad6e0db8cf6fdfcd46265c7   Pending     0s
+prod.01ky6nm6fnqm168evy0pqab97j.7575b14    prod      7575b14a286595a77ad6e0db8cf6fdfcd46265c7   Running     0s
+prod.01ky6nm6fnqm168evy0pqab97j.7575b14    prod      7575b14a286595a77ad6e0db8cf6fdfcd46265c7   Running     8s
+prod.01ky6nm6fnqm168evy0pqab97j.7575b14    prod      7575b14a286595a77ad6e0db8cf6fdfcd46265c7   Succeeded   9s
 ```
 
 The run with a real diff is the interesting one. dev starts immediately, `git-open-pr` opens a PR titled `chore(dev): bump frontend to 3.0.0, backend to 3.0.0`, and the Promotion parks on `git-wait-for-pr` in `Running`. The PR diff is exactly two `newTag` lines in `kustomize/overlays/dev/kustomization.yml`, and the PR body states the Stage, the Freight name and both tags, so the reviewer is looking at the promotion itself rather than reconstructing it from a commit message. Merging unblocks the step, `argocd-update` runs, `book-store-dev` goes Healthy, and only then does staging become eligible and open its own PR with the same two-line diff against its own overlay.

@@ -13,6 +13,7 @@ files:
   - argo/workflow.yml
   - docs/mlflow.md
   - docs/workflows/inference-online.md
+  - docs/k8s.md
 ---
 
 MLflow's model registry is genuinely useful. You register a model, assign an alias, and anywhere in your codebase you can reference it as `models:/CaliforniaHousingRegressor@production`. Clean, human-readable, decoupled from the underlying version number. Promoting a new model is just moving the alias.
@@ -38,7 +39,7 @@ So there are two different kinds of reference in play. The registry alias is a p
 
 ## What the alias actually resolves to
 
-Walk through what the pointer chain looks like in the blueprint. Training registers a new version under one logical name, `CaliforniaHousingRegressor`, and deliberately stops there — `pipelines/train.py` says in its own docstring that it "registers model version in MLflow (NO promotion / deployment decision)". The artifacts for that version are written by the MLflow server to its S3 artifact root, `s3://mlflow-artifact-store-123-da/`. Promotion is a separate act: someone, or the pipeline, moves the `production` alias onto a version number.
+Walk through what the pointer chain looks like in the blueprint. Training registers a new version under one logical name, `CaliforniaHousingRegressor`, and deliberately stops there — `pipelines/train.py` says in its own docstring that it "registers model version in MLflow (NO promotion / deployment decision)". The artifacts for that version are uploaded by the training job under the server's S3 artifact root, `s3://mlflow-artifact-store-123-da/`. Promotion is a separate act: someone, or the pipeline, moves the `production` alias onto a version number.
 
 Resolving the alias is two registry calls:
 
@@ -110,7 +111,7 @@ spec:
       storageUri: "s3://mlflow-artifact-store-123-da/1/models/m-8f9d92e4d921400fb6d51d6d60ed06ab/artifacts"
 ```
 
-Three things to read off it. `modelFormat: mlflow` plus `runtime: kserve-mlserver` tells KServe to hand the downloaded directory to MLServer's MLflow runtime, which is what understands the PyFunc layout. `serviceAccountName: s3-sa` is the same service account the training job and the MLflow server use for the bucket — serving reads the artifacts with the same identity that wrote them, and that identity is bound to S3, not to MLflow. And `storageUri` is a literal string. There is no templating, no reference to a registry, nothing for the cluster to resolve later.
+Three things to read off it. `modelFormat: mlflow` plus `runtime: kserve-mlserver` tells KServe to hand the downloaded directory to MLServer's MLflow runtime, which is what understands the PyFunc layout. `serviceAccountName: s3-sa` carries the same `s3creds` binding the training job and the MLflow server use for the bucket; the training job takes the credentials from `envFrom`, KServe's storage initializer reads them through the service account. Serving reaches the artifacts with the same credentials that wrote them, and those are bound to S3, not to MLflow. And `storageUri` is a literal string. There is no templating, no reference to a registry, nothing for the cluster to resolve later.
 
 The `m-<id>` in the committed manifest is not the one in the docs' worked example. That's expected: the pipeline rewrites this line on every promotion, so the file in the repo is whatever the last run resolved.
 
@@ -175,7 +176,7 @@ python scripts/resolve_model_artifact_uri.py
 ```
 
 ```text
-s3://mlflow-artifact-store-123-da/1/models/m-7065bfbb8b9f436fb9eafdcb97e192a9/artifacts/
+Resolved artifact URI: s3://mlflow-artifact-store-123-da/1/models/m-7065bfbb8b9f436fb9eafdcb97e192a9/artifacts/
 ```
 
 That string goes into `storageUri`, the manifest is applied, and KServe (installed in `RawDeployment` mode via the Helm charts, v0.16.0) creates the predictor. At pod startup the storage initializer downloads the artifact directory from S3 using `s3-sa`, MLServer loads the PyFunc, and the model signature is enforced on incoming requests. The tracking server is not in that sequence at any point.
@@ -190,9 +191,7 @@ READY=True
 
 From there inference is the V2 protocol — `POST /v2/models/housing-model/infer` through a port-forward to `svc/housing-model-predictor`, with each feature sent as a named tensor. V1's `:predict` endpoint is not available with the MLServer runtime, which is the only serving-side surprise in the setup.
 
-The automated path produces the same end state through `argo submit argo/workflow.yml --watch`: four pods, a new version in the registry, the alias moved, and a commit on `main` that changes exactly one line of the manifest.
-
-<!-- TODO: verify whether anything (Argo CD, a webhook, or a manual kubectl apply) applies the updated manifest after the update-git commit; the repo docs stop at the Git push. -->
+The automated path, `argo submit argo/workflow.yml --watch`, runs the same chain as four pods: a new version in the registry, the alias moved, the URI resolved, and a commit on `main` that changes exactly one line of the manifest. It stops at the push. Nothing in the repository applies that commit to the cluster, so the `kubectl apply` is still a manual step, or the hook for whatever GitOps controller you put in front of it.
 
 ## Takeaways
 

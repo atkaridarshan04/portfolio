@@ -23,7 +23,7 @@ Mine did too. The early serving layer in [mlops-platform-blueprint](https://gith
 
 A model never sees raw rows. It sees the output of a chain: fill `total_bedrooms` with a median, one-hot encode `ocean_proximity`, derive a few ratios. Every step in that chain has two parts — state that was fitted on the training data (the median, the list of categories) and code that applies it. The trained weights only make sense relative to that exact chain. Change any link and the numbers landing in the model mean something slightly different from what it learned.
 
-Training-serving skew is what you get when the chain that ran at training time and the chain that runs at request time stop being the same chain. In the original layout they were two copies from the start: one in the training script, one in the API. [docs/codebase/model-packaging.md](https://github.com/atkaridarshan04/mlops-platform-blueprint/blob/main/docs/codebase/model-packaging.md) lists what that invited — preprocessing logic in the API diverging from training, version mismatches between the preprocessing artifacts and the model on retrain or rollback, and inference code tightly coupled to preprocessing internals.
+Training-serving skew is what you get when the chain that ran at training time and the chain that runs at request time stop being the same chain. In the original layout they were one package, `src/preprocessing`, imported from two places: the training script and the API image. Same code in the repo, two deployments of it, and the API image was built from whatever commit was checked out at build time, with nothing tying that to the training run. [docs/codebase/model-packaging.md](https://github.com/atkaridarshan04/mlops-platform-blueprint/blob/main/docs/codebase/model-packaging.md) lists what that invited — preprocessing logic in the API diverging from training, version mismatches between the preprocessing artifacts and the model on retrain or rollback, and inference code tightly coupled to preprocessing internals.
 
 The nasty part is that nothing fails loudly. The encoder is built with `handle_unknown='ignore'`:
 
@@ -39,9 +39,9 @@ That is the right setting for a serving path — a category the encoder never sa
 
 ## Why separate artifacts drift
 
-Count the moving parts in the old layout: a model file, an imputer file, an encoder file, and the feature engineering functions compiled into the API image. Four things, each with its own lifecycle. The registry version described one of them.
+Count the moving parts in the old layout: a model file, an imputer file, an encoder file, and the feature engineering functions compiled into the API image. Four things, each with its own lifecycle, and nothing describing them together: training saved the three fitted objects to `artifacts/production/` and the API loaded them from that directory, so a version was whatever happened to be in a folder.
 
-Retraining regenerates all three fitted objects. If the deploy step copies the new model and forgets the encoder — or copies both but the API image was built last week from a different `src/` — the chain is broken and nothing tells you. The feature code is the worst of the four, because it is not an artifact at all. It ships on the API's release cadence. A one-line change to a ratio is invisible to the registry:
+Retraining regenerates all three fitted objects. If the deploy step copies the new model and forgets the encoder — or copies both but the API image was built last week from a different `src/` — the chain is broken and nothing tells you. The feature code is the worst of the four, because it is not an artifact at all. It ships on the API's release cadence. A one-line change to a ratio is invisible to every artifact:
 
 ```python title="src/preprocessing/feature_engineering.py"
 def add_engineered_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -56,7 +56,7 @@ def add_engineered_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 ```
 
-Edit that `replace(0, np.nan)` guard, or the order of operations, in the API only, and every model in the registry is now being fed features it was not trained on. Rollback makes it worse rather than better. Point the registry back at the previous model version and you have rolled back the weights. The encoder in the API is still the new one. The feature code is still the new one. A rollback that only covers one of four coupled parts is not a rollback; it is a different, untested combination.
+Edit that `replace(0, np.nan)` guard, or the order of operations, in the API only, and every model it serves is now being fed features it was not trained on. Rollback makes it worse rather than better. Put the previous `model.joblib` back and you have rolled back the weights. The encoder in the API is still the new one. The feature code is still the new one. A rollback that only covers one of four coupled parts is not a rollback; it is a different, untested combination.
 
 The fix is not more discipline in the deploy checklist. It is removing the possibility of the parts being on different versions.
 
@@ -129,11 +129,11 @@ The packaging doc states what a single model version now represents: the exact f
 
 ## What it looks like running
 
-Training runs as an ephemeral Kubernetes Job, or as the first step of the Argo workflow. Either way the container clones the repo, runs `dvc pull data/raw/housing.csv`, then `python -m pipelines.train`. The run lands under the `california_housing_price` experiment and registers a new version of `CaliforniaHousingRegressor`. Per [docs/mlflow.md](https://github.com/atkaridarshan04/mlops-platform-blueprint/blob/main/docs/mlflow.md), each run logs the unified PyFunc model, its signature, the bundled source, the environment spec, and a `data_dvc_md5` tag so the version traces back to the exact dataset hash too.
+Training runs as an ephemeral Kubernetes Job, or as the first step of the Argo workflow. Either way the container clones the repo, runs `dvc pull data/raw/housing.csv`, then `python -m pipelines.train`. The run lands under the `california_housing_price` experiment and registers a new version of `CaliforniaHousingRegressor`. [docs/mlflow.md](https://github.com/atkaridarshan04/mlops-platform-blueprint/blob/main/docs/mlflow.md) lists what each run logs: the unified PyFunc model, its signature, the bundled source, the environment spec, and the DVC dataset hash, which `pipelines/train.py` sets as a `data_dvc_md5` tag so the version traces back to the exact data too.
 
 Promotion is one registry call. In the Argo pipeline it is the entire promote step:
 
-```python title="argo/template.yml"
+```yaml title="argo/template.yml"
 import os
 from mlflow.tracking import MlflowClient
 version = int(os.environ["MODEL_VERSION"].strip())
@@ -151,7 +151,7 @@ python scripts/resolve_model_artifact_uri.py
 ```
 
 ```text
-s3://mlflow-artifact-store-123-da/1/models/m-7065bfbb8b9f436fb9eafdcb97e192a9/artifacts/
+Resolved artifact URI: s3://mlflow-artifact-store-123-da/1/models/m-7065bfbb8b9f436fb9eafdcb97e192a9/artifacts/
 ```
 
 That path goes into the InferenceService — by hand, or committed by the workflow's last step. I wrote up the resolution step on its own in [MLflow knows where the model is, KServe doesn't care](/writing/mlflow-knows-where-the-model-is-kserve-doesnt-care/), and the full train-promote-resolve-commit chain in [From training to serving in one pipeline run](/writing/from-training-to-serving-in-one-pipeline-run/).

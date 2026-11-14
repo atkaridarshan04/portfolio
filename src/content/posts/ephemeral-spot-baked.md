@@ -9,7 +9,8 @@ repo: "https://github.com/atkaridarshan04/aws-github-runners"
 files:
   - terraform/main.tf
   - terraform/variables.tf
-  - terraform/outputs.tf
+  - docs/02-setup-guide.md
+  - docs/05-operations.md
   - scripts/download-lambda-packages.sh
   - .github/workflows/ci.yml
   - docs/01-concepts.md
@@ -41,9 +42,9 @@ The path from a push to a terminated instance has five components, each doing on
 
 ### Why ephemeral
 
-`enable_ephemeral_runners = true` in the module wrapper becomes an `ENABLE_EPHEMERAL_RUNNERS` environment variable on the scale-up Lambda and an `agent_mode` of `ephemeral` in the start script baked into the AMI. In that mode the runner binary starts in the foreground with a just-in-time config — the module's default for ephemeral runners — rather than being installed as a service. When `run.sh` returns, the script's `EXIT` trap stops the CloudWatch agent and calls `terminate-instances` on the instance it's running on:
+`enable_ephemeral_runners = true` in the module wrapper becomes an `ENABLE_EPHEMERAL_RUNNERS` environment variable on the scale-up Lambda and an `agent_mode` SSM parameter set to `ephemeral`, which the start script reads at boot. In that mode the runner binary starts in the foreground with a just-in-time config — the module's default for ephemeral runners — rather than being installed as a service. When `run.sh` returns, the script's `EXIT` trap stops the CloudWatch agent and calls `terminate-instances` on the instance it's running on:
 
-```bash title="modules/runners/templates/start-runner.sh"
+```bash title="upstream module: modules/runners/templates/start-runner.sh"
   # allows to flush the cloud watch logs and traces
   sleep 10
   if [ "$agent_mode" = "ephemeral" ] || [ "$exit_code" -ne 0 ]; then
@@ -95,7 +96,7 @@ The whole fleet is one module block in `terraform/main.tf`, driven by `terraform
   minimum_running_time_in_minutes = var.minimum_running_time_in_minutes
 ```
 
-`instance_types` is a preference list — `t3a.medium`, `c5a.large`, `c6a.large`, `t3.medium`, `c5.large`, `c6i.large` by default — and `price-capacity-optimized` lets the fleet pick from pools with the capacity to serve the request rather than only the cheapest one, which is what keeps interruptions down. `enable_userdata = false` is the direct consequence of the baked AMI: there's nothing to install at boot, so the launch template carries no bootstrap script.
+`instance_types` is a preference list — `t3a.medium`, `c5a.large`, `c6a.large`, `t3.medium`, `c5.large`, `c6i.large` by default — and `price-capacity-optimized` is the allocation strategy the wrapper chooses for fewer interruptions. `enable_userdata = false` is the direct consequence of the baked AMI: there's nothing to install at boot, so the launch template carries no bootstrap script.
 
 The AMI lookup is a name filter scoped to the owning account, so a rebuilt image is picked up by the next `terraform apply` with no variable changes:
 
@@ -119,15 +120,15 @@ The AMI lookup is a name filter scoped to the owning account, so a rebuilt image
 ```
 
 > [!note] The Lambda code ships separately from the module
-> The module's three Lambdas — webhook, runners (scale-up and scale-down), runner-binaries-syncer — are distributed as versioned zip releases, not vendored into the module. `main.tf` pins the module to `7.11.0` and `scripts/download-lambda-packages.sh` reads that version out of `main.tf` with `awk` before fetching the matching zips, so the two can't drift. Bump the version, re-run the script, apply.
+> The module's three Lambda packages — webhook, runners (scale-up and scale-down), runner-binaries-syncer — are distributed as versioned zip releases, not vendored into the module. `main.tf` pins the module to `7.11.0` and `scripts/download-lambda-packages.sh` reads that version out of `main.tf` with `awk` before fetching the matching zips, so the two can't drift. Bump the version, re-run the script, apply.
 
-The module also creates a runner-binaries-syncer Lambda that mirrors the GitHub runner binary into S3, so an instance that does need the binary fetches it from S3 rather than github.com. With a baked AMI that path is a fallback, not the normal boot.
+The module also creates a runner-binaries-syncer Lambda that mirrors the GitHub runner binary into S3, so an instance that does need the binary fetches it from S3 rather than github.com. With a baked AMI and `enable_userdata = false`, nothing at boot consults that copy; it sits unused.
 
 ## The AMI
 
-I didn't write a Packer template. The upstream project ships one per OS under `images/`, and the Ubuntu 22.04 one does everything this fleet needs. Its shell provisioner installs Docker from Docker's own apt repository, the CloudWatch agent and AWS CLI v2, plus `jq`, `git` and `unzip`:
+I didn't write a Packer template. The upstream project ships several under `images/`, one per OS and architecture, and the Ubuntu 22.04 one does everything this fleet needs. Its shell provisioner installs Docker from Docker's own apt repository, the CloudWatch agent and AWS CLI v2, plus `jq`, `git` and `unzip`:
 
-```hcl title="images/ubuntu-jammy/github_agent.ubuntu.pkr.hcl"
+```hcl title="upstream module: images/ubuntu-jammy/github_agent.ubuntu.pkr.hcl"
   provisioner "shell" {
     environment_vars = [
       "DEBIAN_FRONTEND=noninteractive"
@@ -149,7 +150,7 @@ I didn't write a Packer template. The upstream project ships one per OS under `i
 
 Two later provisioners matter more than the package list. The first runs the module's own `install-runner.sh` at build time: it downloads the runner tarball into `/opt/actions-runner`, creates `/opt/hostedtoolcache` so the `setup-*` actions have somewhere to put toolchains, and runs the runner's dependency installer. The second drops `start-runner.sh` into cloud-init's per-boot directory:
 
-```hcl title="images/ubuntu-jammy/github_agent.ubuntu.pkr.hcl"
+```hcl title="upstream module: images/ubuntu-jammy/github_agent.ubuntu.pkr.hcl"
   provisioner "shell" {
     inline = [
       "sudo mv /tmp/start-runner.sh /var/lib/cloud/scripts/per-boot/start-runner.sh",
@@ -205,7 +206,7 @@ The smoke-test workflow in the repo targets the fleet by label and checks the th
 
 Trigger it and the job sits briefly in "Waiting for a runner" while the webhook, scale-up Lambda and EC2 launch happen. Then a runner picks it up and three things should be true: the instance ID is different on every run, the marker step prints `clean instance, no prior job state`, and `docker run` starts immediately with nothing but the `hello-world` pull — no `apt install` output, no image-layer downloads for Docker itself. Package-manager output on a normal run means something is pulling from outside the AMI and is worth tracking down.
 
-From the AWS side, the EC2 console shows an instance named `<PROJECT_NAME>-gh-runner-action-runner` go to `running` for the job and to `shutting-down` right after it finishes. CloudWatch gets one log group per Lambda, one for API Gateway access, and a `/github-self-hosted-runners/<PROJECT_NAME>-gh-runner/` family for the instance's own `user_data`, `runner` and `runner-startup` logs, shipped by the CloudWatch agent that the AMI carries. If that last group never appears, the instance launched but didn't get far enough to register, and the scale-up Lambda's log is the next place to look.
+From the AWS side, the EC2 console shows an instance named `<PROJECT_NAME>-gh-runner-action-runner` go to `running` for the job and to `shutting-down` right after it finishes. CloudWatch gets one log group per Lambda, one for API Gateway access, and a `/github-self-hosted-runners/<PROJECT_NAME>-gh-runner/` family for the instance's own `messages`, `user_data`, `runner` and `runner-startup` logs, shipped by the CloudWatch agent that the AMI carries. If that last group never appears, the instance launched but didn't get far enough to register, and the scale-up Lambda's log is the next place to look.
 
 The number that matters is queued-to-running, and GitHub's API already has it:
 

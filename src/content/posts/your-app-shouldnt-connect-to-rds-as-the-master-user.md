@@ -99,7 +99,7 @@ def scram_sha_256_verifier(password: str, iterations: int = SCRAM_ITERATIONS) ->
     return f"SCRAM-SHA-256${iterations}:{b64(salt)}${b64(stored_key)}:{b64(server_key)}"
 ```
 
-This is the derivation from RFC 5802: PBKDF2-HMAC-SHA256 over the password and a random salt, then `ClientKey`, `StoredKey` and `ServerKey` from the result. What Postgres stores for a SCRAM role is exactly that verifier string, and `ALTER ROLE ... PASSWORD` accepts it directly. So the SQL statement the Job sends contains a verifier, never the plaintext, and the plaintext is in exactly one place: the Secrets Manager version the app will read.
+This is the SCRAM derivation (RFC 5802, applied to SHA-256 by RFC 7677): PBKDF2-HMAC-SHA256 over the password and a random salt, then `ClientKey`, `StoredKey` and `ServerKey` from the result. What Postgres stores for a SCRAM role is exactly that verifier string, and `ALTER ROLE ... PASSWORD` accepts it directly. So the SQL statement the Job sends contains a verifier, never the plaintext, and the plaintext is in exactly one place: the Secrets Manager version the app will read.
 
 ## Getting the secret into a pod without a restart script
 
@@ -109,7 +109,7 @@ Three pieces carry the credential from Secrets Manager to a running container, a
 
 Every workload here that authenticates to AWS — the bootstrap Job, External Secrets Operator, the demo app's migrate Job — does it through EKS Pod Identity. An `aws_eks_pod_identity_association` ties an IAM role to a `(cluster, namespace, service account)` tuple. The trust policy names `pods.eks.amazonaws.com` as the principal; there is no OIDC provider to register, no trust-policy condition, no JWT audience string to keep in sync. AWS's own EKS guide now recommends Pod Identity over IRSA wherever it is available.[^1]
 
-Each role is scoped to exactly the secret ARNs its workload needs. ESO's role is the broadest, and it still only sees the role secrets this stack generates.
+Each role is scoped to exactly the secret ARNs its workload needs. ESO's role sees every role secret this stack generates, and nothing else.
 
 ```hcl title="terraform/main.tf"
 # ESO's ClusterSecretStore reads through this role, scoped to exactly these secrets.
@@ -168,9 +168,9 @@ metadata:
     reloader.stakater.com/auto: "true"
 ```
 
-Put together: a rotation lands in Postgres and Secrets Manager at the same moment, the Kubernetes Secret catches up on ESO's next tick, and the pods catch up when Reloader rolls them after that. Those are two separate gaps, not one. The `refreshInterval` of a minute keeps the first short; Reloader only closes the second.
+Put together: a rotation lands in Secrets Manager and Postgres within the same apply, the new secret version written first and the `ALTER ROLE` right behind it; the Kubernetes Secret catches up on ESO's next tick, and the pods catch up when Reloader rolls them after that. Those are two separate gaps, not one. The `refreshInterval` of a minute keeps the first short; Reloader only closes the second.
 
-<!-- TODO: verify what the demo app returns during the window between ALTER ROLE and the Reloader restart, since it reconnects on every request -->
+In that window a pod still holding the old password fails its connect on every request, and the demo handler answers HTTP 500 with `{"status": "error"}`. Reloader's rollout is what ends it.
 
 The one workload that skips this chain is the migrate Job. Reloader does not watch Jobs — they are not restarted, they run once and exit — so routing a one-shot Job through ESO buys nothing. It fetches the migrator secret directly with its own Pod Identity role, scoped to that one ARN, and connects.
 
@@ -178,7 +178,7 @@ The one workload that skips this chain is the migrate Job. Reloader does not wat
 
 Secrets Manager has native scheduled rotation, and for anything other than the RDS master it needs a Lambda, because Secrets Manager does not know how to speak Postgres. That Lambda looks like the right tool and is the wrong one here.
 
-The problem is ownership. Terraform already writes the secret, and the bootstrap Job's version bump is an unstaged overwrite. A rotation Lambda runs the staged `AWSPENDING` to `AWSCURRENT` protocol with a `testSecret` step in the middle. A version bump landing mid-rotation pulls the rug out from under that test. Two owners of one secret is the hazard, not the Lambda itself.
+The problem is ownership. Terraform already writes the secret, and Terraform's version bump is an unstaged overwrite. A rotation Lambda runs the staged `AWSPENDING` to `AWSCURRENT` protocol with a `testSecret` step in the middle. A version bump landing mid-rotation pulls the rug out from under that test. Two owners of one secret is the hazard, not the Lambda itself.
 
 So Terraform stays the only writer, and "scheduled" comes from scheduling the apply. A GitHub Actions workflow increments a counter file, regenerates `rotation.auto.tfvars` from it, applies, and commits both back.
 
@@ -218,7 +218,7 @@ resource "kubernetes_job_v1" "bootstrap" {
 
 ## What a rotation looks like
 
-The scheduled workflow is set to run monthly. To watch the same mechanism fire now, do what the workflow does.
+The workflow carries a monthly cron, commented out for now, so rotation runs on manual dispatch. To watch the mechanism fire, do what the workflow does.
 
 ```bash
 echo 'password_versions = { appdb_migrator = 99, appdb_app = 99 }' > terraform/rotation.auto.tfvars
