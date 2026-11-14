@@ -422,3 +422,116 @@
 @utility arrive-word { display: inline-block; animation: arrive-word 0.45s var(--ease-reveal) backwards; }
 @utility arrive-left { animation: arrive-left 0.6s var(--ease-reveal) backwards; }
 
+
+/* ═══════════════════════════════════════════════════════════════
+   Field notes — the Markdown body of a post, set to the same page.
+   One measure, one text size, hairlines for structure; the amber is
+   reserved for links and the rule beside a heading, so a note reads
+   as a log rather than a brochure.
+   ═══════════════════════════════════════════════════════════════ */
+.post-body {
+  font-size: 16px;
+  line-height: 1.75;
+  color: rgba(231, 233, 228, 0.86);
+  & > * + * { margin-top: 1.25em; }
+
+  & h2, & h3, & h4 {
+    font-family: var(--font-sans);
+    font-weight: 500;
+    letter-spacing: -0.016em;
+    line-height: 1.25;
+    color: var(--foreground);
+    scroll-margin-top: 5rem;
+  }
+  & h2 { font-size: 1.45rem; margin-top: 2.4em; padding-top: 1.2em; border-top: 1px solid var(--hairline); }
+  & h3 { font-size: 1.15rem; margin-top: 2em; }
+  & h4 { font-size: 1rem; margin-top: 1.6em; text-transform: uppercase; letter-spacing: 0.06em; font-size: 12px; color: var(--muted-foreground); }
+
+  & a {
+    color: var(--primary);
+    text-decoration: underline;
+    text-decoration-color: rgba(245, 166, 35, 0.35);
+    text-underline-offset: 3px;
+    transition: text-decoration-color var(--dur-state) var(--ease-state);
+    &:hover { text-decoration-color: var(--primary); }
+  }
+
+  & strong { color: var(--foreground); font-weight: 600; }
+  & em { color: var(--foreground); }
+
+  & ul, & ol { padding-left: 1.25rem; }
+  & li + li { margin-top: 0.4em; }
+  & ul { list-style: none; padding-left: 1rem; }
+  & ul > li { position: relative; }
+  & ul > li::before {
+    content: "";
+    position: absolute;
+    left: -1rem;
+    top: 0.8em;
+    width: 0.5rem;
+    height: 1px;
+    background: rgba(245, 166, 35, 0.7);
+  }
+  & ol { list-style: decimal; }
+  & ol::marker, & ol > li::marker { font-family: var(--font-mono); font-size: 12px; color: var(--primary); }
+
+  & blockquote {
+    margin-left: 0;
+    padding: 0.25rem 0 0.25rem 1.1rem;
+    border-left: 1px solid rgba(245, 166, 35, 0.6);
+    color: var(--muted-foreground);
+    & > * + * { margin-top: 0.75em; }
+  }
+
+  & code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    border: 1px solid var(--hairline);
+    border-radius: 3px;
+    background: rgba(231, 233, 228, 0.04);
+    padding: 0.1em 0.4em;
+    color: var(--foreground);
+  }
+
+  /* fenced blocks: Shiki's output, framed like the demos on the home page */
+  & pre.astro-code {
+    margin-top: 1.5em;
+    border: 1px solid var(--hairline);
+    border-radius: 0.5rem;
+    background: #07090b !important;
+    box-shadow: var(--shadow-card);
+    padding: 1rem 1.15rem;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.65;
+    & code {
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      padding: 0;
+      font-size: inherit;
+      color: inherit;
+    }
+  }
+
+  & img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--hairline);
+    border-radius: 0.5rem;
+    background: #0a0c0f;
+  }
+  & figure { margin: 1.75em 0; }
+  & figcaption { margin-top: 0.6em; font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); }
+
+  & hr { border: 0; border-top: 1px solid var(--hairline); margin: 2.5em 0; }
+
+  & table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    & th, & td { padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--hairline); text-align: left; vertical-align: top; }
+    & th { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted-foreground); font-weight: 500; }
+  }
+}

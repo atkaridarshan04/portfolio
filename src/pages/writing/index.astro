@@ -1,0 +1,69 @@
+---
+import Base from "@/layouts/Base.astro";
+import SiteHeader from "@/components/site/SiteHeader.astro";
+import SiteFooter from "@/components/site/SiteFooter.astro";
+import PostRow from "@/components/site/PostRow.astro";
+import { countTags, getPublishedPosts } from "@/lib/posts";
+
+const posts = await getPublishedPosts();
+const tags = countTags(posts);
+---
+
+<Base
+  title="Field notes | Darshan Atkari"
+  description="Short write-ups of things that broke or needed deciding on Kubernetes, AWS, GitOps and MLOps systems, each tied to the repository it came from."
+  path="/writing/"
+>
+  <SiteHeader current="writing" />
+  <main class="relative min-h-screen bg-background text-foreground antialiased">
+    <section class="section-pad pt-32 sm:pt-36">
+      <div class="mx-auto max-w-6xl px-6">
+        <div class="grid grid-cols-1 gap-10 md:grid-cols-12 md:items-end">
+          <div class="md:col-span-7">
+            <div class="flex items-center gap-3">
+              <span class="inline-flex items-center gap-1.5 label-mono text-status-good">
+                <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-status-good status-pulse"></span>
+                published
+              </span>
+              <div class="h-px w-8 bg-hairline"></div>
+              <span class="label-mono text-muted-foreground">component / writing</span>
+            </div>
+            <h1 class="mt-7 font-display display-section text-balance">
+              Field notes.<br />
+              <span class="text-muted-foreground">Incidents, decisions, fixes.</span>
+            </h1>
+          </div>
+          <p class="max-w-md text-[15px] leading-relaxed text-muted-foreground md:col-span-5">
+            Short write-ups of things that broke or needed deciding, each tied to the repository it came from. The
+            mechanism first, then what was done about it.
+          </p>
+        </div>
+
+        {tags.length > 0 && (
+          <div class="mt-12 flex flex-wrap items-center gap-1.5">
+            <span class="mr-2 label-mono text-muted-foreground/60">filter</span>
+            {tags.map((t) => (
+              <a href={`/writing/tags/${t.slug}/`} class="chip">
+                {t.tag} <span class="text-muted-foreground/50">{t.count}</span>
+              </a>
+            ))}
+          </div>
+        )}
+
+        <ul class="mt-10 border-t border-hairline">
+          {posts.map((post, i) => <PostRow post={post} index={i} />)}
+        </ul>
+
+        <div class="mt-16 flex flex-wrap items-baseline justify-between gap-4 border-t border-hairline pt-6">
+          <p class="max-w-md text-sm text-muted-foreground">
+            New notes land here first and are posted to LinkedIn after. Subscribe and skip the feed.
+          </p>
+          <a href="/rss.xml" class="group inline-flex items-center gap-2 font-mono text-sm text-foreground transition-state hover:text-primary">
+            rss.xml <span aria-hidden class="inline-block translate-y-px opacity-60 group-hover:opacity-100">↗</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+  <SiteFooter />
+</Base>

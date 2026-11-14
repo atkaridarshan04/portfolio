@@ -1,28 +1,28 @@
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  // The Stageshow kit and skill are vendored as-is from upstream
-  globalIgnores(['dist', 'src/stageshow', '.agents']),
+  // The Stageshow kit and skill are vendored as-is from upstream; .astro holds generated types
+  globalIgnores(['dist', '.astro', 'src/stageshow', '.agents']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,
       reactHooks.configs['recommended-latest'],
-      reactRefresh.configs.vite,
     ],
     languageOptions: {
       globals: globals.browser,
     },
-    rules: {
-      // shadcn/ui components intentionally co-export variant helpers (e.g.
-      // `buttonVariants`) alongside the component - not a real Fast Refresh bug.
-      'react-refresh/only-export-components': 'warn',
+  },
+  {
+    files: ['scripts/**/*.mjs'],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      globals: globals.node,
     },
   },
 ])

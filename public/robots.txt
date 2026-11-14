@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://atkaridarshan.online/sitemap.xml
+Sitemap: https://atkaridarshan.online/sitemap-index.xml

@@ -1,0 +1,32 @@
+---
+import Base from "@/layouts/Base.astro";
+import Portfolio from "@/components/portfolio/Portfolio";
+import { getPublishedPosts, summarize } from "@/lib/posts";
+
+/* The home page is the React portfolio, server-rendered to HTML and then
+   hydrated. It takes the newest field notes as plain data so the Writing
+   section can list them without the island fetching anything. */
+const posts = (await getPublishedPosts()).map(summarize);
+
+const person = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: "Darshan Atkari",
+  url: "https://atkaridarshan.online/",
+  image: "https://atkaridarshan.online/og-image.jpg",
+  jobTitle: "Cloud, DevOps & SRE Engineer",
+  email: "mailto:atkaridarshan04@gmail.com",
+  sameAs: ["https://github.com/atkaridarshan04", "https://www.linkedin.com/in/darshan-atkari/"],
+  knowsAbout: ["Kubernetes", "Terraform", "AWS", "GitOps", "DevSecOps", "MLOps", "Site Reliability Engineering"],
+};
+---
+
+<Base
+  title="Darshan Atkari | Cloud, DevOps & SRE Engineer"
+  description="Darshan Atkari — cloud, DevOps, SRE and MLOps engineer. Kubernetes platforms, GitOps delivery, DevSecOps pipelines and ML serving, built in the open."
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(person)} />
+  </Fragment>
+  <Portfolio client:load posts={posts.slice(0, 5)} total={posts.length} />
+</Base>

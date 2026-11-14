@@ -1,0 +1,78 @@
+---
+/* The document shell every page shares: the head that index.html used to
+   carry, now with a canonical URL and Open Graph block per page, and the
+   RSS feed advertised so readers' tools can find it. */
+import "@/styles.css";
+import favicon from "@/assets/favicon-256.png";
+
+interface Props {
+  title: string;
+  description: string;
+  /* site-relative path of this page, for the canonical and og:url */
+  path?: string;
+  type?: "website" | "article";
+  image?: string;
+  imageAlt?: string;
+}
+
+const {
+  title,
+  description,
+  path = "/",
+  type = "website",
+  image = "/og-image.jpg",
+  imageAlt = "Darshan Atkari - cloud, DevOps, SRE and MLOps engineer",
+} = Astro.props;
+
+const site = Astro.site ?? new URL("https://atkaridarshan.online/");
+const canonical = new URL(path, site).href;
+const ogImage = new URL(image, site).href;
+const feed = new URL("/rss.xml", site).href;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0b0e11" />
+
+    <link rel="icon" type="image/png" href={favicon.src} />
+    <link rel="apple-touch-icon" href={favicon.src} />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content="Darshan Atkari" />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" type="application/rss+xml" title="Darshan Atkari — Field notes" href={feed} />
+
+    <!-- Open Graph: what Slack, WhatsApp and LinkedIn render -->
+    <meta property="og:type" content={type} />
+    <meta property="og:site_name" content="Darshan Atkari" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:alt" content={imageAlt} />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={imageAlt} />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@300..600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <slot name="head" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

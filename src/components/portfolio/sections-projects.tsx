@@ -1,10 +1,10 @@
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { Ext, Reveal, SectionLabel, WordReveal, useSpotlight } from "./primitives";
-import projAws from "@/assets/project-aws.png";
-import projK8s from "@/assets/project-k8s.gif";
-import projMlops from "@/assets/project-mlops.png";
-import projDevsec from "@/assets/project-devsecops.png";
+import projAws from "@/assets/project-aws.png?url";
+import projK8s from "@/assets/project-k8s.gif?url";
+import projMlops from "@/assets/project-mlops.png?url";
+import projDevsec from "@/assets/project-devsecops.png?url";
 
 /* Two things the diagrams needed. First, they arrive at four different
    aspect ratios, and letting each set its own height made the alternating
