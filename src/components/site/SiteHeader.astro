@@ -1,8 +1,8 @@
 ---
 /* The status bar from the home page, static. The sub-pages have no
-   sections to track, so the wayfinding is three links and the same
-   call to action; the bar is always opaque because there is no hero
-   underneath it to show through. */
+   sections to track, so the wayfinding is three links that are always
+   on screen at every width, and the same call to action from sm up;
+   the bar is always opaque because there is no hero to show through. */
 interface Props {
   current?: "home" | "writing";
 }
@@ -12,24 +12,24 @@ const link = (on: boolean) =>
 ---
 
 <header class="fixed inset-x-0 top-0 z-50">
-  <div class="flex items-center justify-between gap-4 border-b border-hairline bg-background/95 px-5 py-3 sm:px-8">
+  <div class="flex items-center justify-between gap-3 border-b border-hairline bg-background/95 px-4 py-3 sm:gap-4 sm:px-8">
     <a href="/" class="group flex shrink-0 items-center gap-2.5">
       <span class="grid h-6 w-6 place-items-center rounded-[3px] bg-primary font-display text-[13px] font-medium leading-none text-primary-foreground">DA</span>
-      <span class="hidden label-mono text-muted-foreground transition-state group-hover:text-foreground sm:inline">darshan-atkari</span>
-      <span class="hidden items-center gap-1.5 label-mono text-status-good md:inline-flex">
+      <span class="hidden label-mono text-muted-foreground transition-state group-hover:text-foreground md:inline">darshan-atkari</span>
+      <span class="hidden items-center gap-1.5 label-mono text-status-good lg:inline-flex">
         <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-status-good status-pulse"></span>
         operational
       </span>
     </a>
 
-    <nav class="ml-2 flex min-w-0 flex-1 items-center justify-start gap-3 overflow-x-auto sm:ml-4 sm:gap-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <nav class="flex min-w-0 items-center gap-4 sm:gap-5" aria-label="Site">
       <a href="/" class={link(current === "home")}>Overview</a>
       <a href="/writing/" class={link(current === "writing")}>Writing</a>
-      <a href="https://github.com/atkaridarshan04" target="_blank" rel="noreferrer" class={`hidden sm:inline ${link(false)}`}>GitHub ↗</a>
+      <a href="https://github.com/atkaridarshan04" target="_blank" rel="noreferrer" class={link(false)}>GitHub ↗</a>
     </nav>
 
-    <a href="/#contact" class="group inline-flex shrink-0 items-center gap-1.5 rounded-[3px] bg-primary px-2.5 py-1.5 label-mono font-medium text-primary-foreground transition-state hover:brightness-110 sm:px-3.5">
-      Get in touch <span aria-hidden class="hidden translate-y-px transition-state group-hover:-translate-y-px sm:inline-block">↗</span>
+    <a href="/#contact" class="group hidden shrink-0 items-center gap-1.5 rounded-[3px] bg-primary px-3.5 py-1.5 label-mono font-medium text-primary-foreground transition-state hover:brightness-110 sm:inline-flex">
+      Get in touch <span aria-hidden class="inline-block translate-y-px transition-state group-hover:-translate-y-px">↗</span>
     </a>
   </div>
 </header>

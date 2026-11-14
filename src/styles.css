@@ -693,3 +693,21 @@ dialog.lightbox {
 @media (prefers-reduced-motion: no-preference) {
   ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 180ms; }
 }
+
+/* ── Archive list: numerals from a counter, chips that press ───── */
+.post-list { counter-reset: note; }
+.post-list > li:not([hidden]) { counter-increment: note; }
+.post-list .row-num::before { content: counter(note, decimal-leading-zero); }
+button.chip { cursor: pointer; }
+.chip[aria-pressed="true"] {
+  border-color: rgba(245, 166, 35, 0.5);
+  background: rgba(245, 166, 35, 0.12);
+  color: var(--primary);
+  & span { color: rgba(245, 166, 35, 0.6); }
+}
+
+/* ── Nav strip: the right edge fades so the overflow reads as scrollable ── */
+.nav-strip {
+  mask-image: linear-gradient(to right, black calc(100% - 2.5rem), transparent);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 2.5rem), transparent);
+}

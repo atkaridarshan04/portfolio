@@ -156,8 +156,16 @@ export function Nav() {
         </span>
       </a>
 
-      {/* wayfinding below the rail's breakpoint */}
-      <nav className="ml-4 flex min-w-0 flex-1 items-center justify-start gap-5 overflow-x-auto lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* on a phone the bar carries only the links that leave the page;
+          the sections are a scroll away and the rail is not there anyway */}
+      <nav className="ml-3 flex min-w-0 flex-1 items-center justify-start gap-4 sm:hidden" aria-label="Site">
+        <a href="/writing/" className="py-1 label-mono whitespace-nowrap text-muted-foreground/70 transition-state hover:text-foreground">Writing</a>
+        <a href="https://github.com/atkaridarshan04" target="_blank" rel="noreferrer" className="py-1 label-mono whitespace-nowrap text-muted-foreground/70 transition-state hover:text-foreground">GitHub ↗</a>
+      </nav>
+
+      {/* wayfinding between the phone and the rail's breakpoint: the sections,
+          then GitHub, in a strip that scrolls and fades at its right edge */}
+      <nav className="nav-strip ml-4 hidden min-w-0 flex-1 items-center justify-start gap-5 overflow-x-auto pr-6 sm:flex lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {SECTIONS.slice(1).map((s) => (
           <a key={s.id} href={`#${s.id}`} className="relative py-1">
             <span className={`label-mono whitespace-nowrap transition-state ${active === s.id ? "text-primary" : "text-muted-foreground/70 hover:text-foreground"}`}>
@@ -169,9 +177,18 @@ export function Nav() {
             )}
           </a>
         ))}
+        <a href="https://github.com/atkaridarshan04" target="_blank" rel="noreferrer" className="py-1 label-mono whitespace-nowrap text-muted-foreground/70 transition-state hover:text-foreground">
+          GitHub ↗
+        </a>
       </nav>
 
-      <div className="flex shrink-0 items-center gap-4">
+      <div className="flex shrink-0 items-center gap-5">
+        {/* from the rail's breakpoint up the sections live in the rail, so the
+            bar carries the links that leave the page: the archive and GitHub */}
+        <nav className="hidden items-center gap-5 lg:flex" aria-label="Site">
+          <a href="/writing/" className="label-mono whitespace-nowrap text-muted-foreground/70 transition-state hover:text-foreground">Writing</a>
+          <a href="https://github.com/atkaridarshan04" target="_blank" rel="noreferrer" className="label-mono whitespace-nowrap text-muted-foreground/70 transition-state hover:text-foreground">GitHub ↗</a>
+        </nav>
         <span className="hidden label-mono text-muted-foreground/60 lg:inline">
           session <SessionUptime />
         </span>
