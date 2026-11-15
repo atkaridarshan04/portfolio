@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 export const SECTIONS = [
   { id: "top", label: "Overview" },
   { id: "projects", label: "Projects" },
+  { id: "writing", label: "Writing" },
   { id: "slo", label: "SLOs" },
   { id: "stack", label: "Stack" },
   { id: "certs", label: "Certifications" },

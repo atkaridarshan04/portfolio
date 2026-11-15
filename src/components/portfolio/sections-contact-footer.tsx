@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import profileImg from "@/assets/profile.jpg";
+import profileImg from "@/assets/profile.jpg?url";
 import { Ext, Magnetic, Reveal, SectionLabel, StatusDot, WordReveal, useSpotlight } from "./primitives";
 
 const EMAIL = "atkaridarshan04@gmail.com";

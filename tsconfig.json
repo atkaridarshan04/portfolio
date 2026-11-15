@@ -1,36 +1,14 @@
 {
+  "extends": "astro/tsconfigs/base",
   "compilerOptions": {
-    "target": "ES2023",
-    "useDefineForClassFields": true,
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
-
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-
     "jsx": "react-jsx",
-
+    "jsxImportSource": "react",
     "strict": true,
-    "skipLibCheck": true,
-    "isolatedModules": true,
-
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-
-    "resolveJsonModule": true,
-
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
-    },
-
-    "types": ["vite/client"],
-
-    "noEmit": true
+    }
   },
-
-  "include": ["src"],
-  "exclude": [
-    "dist",
-    "node_modules"
-  ]
+  "include": [".astro/types.d.ts", "**/*"],
+  "exclude": ["dist", "node_modules"]
 }

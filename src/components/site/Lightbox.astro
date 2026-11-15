@@ -1,0 +1,12 @@
+---
+/* One dialog per page; any figure link marked data-lightbox opens in it.
+   Native <dialog> gives the focus trap and Escape for free; the figure's
+   link still works as a plain link when JS has not run. */
+---
+
+<dialog class="lightbox" aria-label="Enlarged figure">
+  <form method="dialog" class="lightbox-frame">
+    <img alt="" />
+    <button type="submit" class="lightbox-close label-mono">close <span aria-hidden>×</span></button>
+  </form>
+</dialog>

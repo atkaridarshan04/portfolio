@@ -1,0 +1,49 @@
+---
+import Base from "@/layouts/Base.astro";
+import SiteHeader from "@/components/site/SiteHeader.astro";
+import SiteFooter from "@/components/site/SiteFooter.astro";
+import PostRow from "@/components/site/PostRow.astro";
+import { countTags, getPublishedPosts, tagSlug } from "@/lib/posts";
+
+export async function getStaticPaths() {
+  const posts = await getPublishedPosts();
+  return countTags(posts).map(({ tag, slug }) => ({
+    params: { tag: slug },
+    props: { tag, posts: posts.filter((p) => p.data.tags.some((t) => tagSlug(t) === slug)) },
+  }));
+}
+
+const { tag, posts } = Astro.props;
+---
+
+<Base
+  title={`${tag} | Field notes | Darshan Atkari`}
+  description={`Field notes tagged ${tag}: ${posts.length} write-up${posts.length === 1 ? "" : "s"} by Darshan Atkari.`}
+  path={`/writing/tags/${tagSlug(tag)}/`}
+  image="/writing/og.png"
+  imageAlt="Field notes by Darshan Atkari"
+  transitions
+>
+  <SiteHeader current="writing" />
+  <main class="relative min-h-screen bg-background text-foreground antialiased">
+    <section class="section-pad pt-32 sm:pt-36">
+      <div class="mx-auto max-w-6xl px-6">
+        <a href="/writing/" class="group inline-flex items-center gap-2 font-mono text-[12px] text-muted-foreground transition-state hover:text-primary">
+          <span aria-hidden>←</span> all field notes
+        </a>
+        <div class="mt-8 flex items-center gap-3">
+          <span class="label-mono text-muted-foreground">component / writing / tag</span>
+        </div>
+        <h1 class="mt-7 font-display display-section text-balance">
+          {tag}<br />
+          <span class="text-muted-foreground">{posts.length} note{posts.length === 1 ? "" : "s"}.</span>
+        </h1>
+
+        <ul class="mt-14 border-t border-hairline">
+          {posts.map((post, i) => <PostRow post={post} index={i} />)}
+        </ul>
+      </div>
+    </section>
+  </main>
+  <SiteFooter />
+</Base>
