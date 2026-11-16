@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "node scripts/check-posts.mjs && astro build",
     "preview": "astro preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "sync:posts": "node scripts/sync-posts.mjs"
+    "sync:posts": "node scripts/sync-posts.mjs",
+    "check:posts": "node scripts/check-posts.mjs"
   },
   "dependencies": {
     "@astrojs/react": "^7.1.9",
